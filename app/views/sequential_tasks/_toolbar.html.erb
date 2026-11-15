@@ -1,0 +1,96 @@
+<%# The toolbar of the project screens: the title with the view switch and the legend, then the filters.
+    Locals: list_path - lambda that builds a link of this screen (keeping the other settings) from overrides %>
+<%
+  all_label = l('sequential_tasks.toolbar.version_all')
+  none_label = l('sequential_tasks.toolbar.version_none')
+  # A dropdown over the records of a filter: all, none, then one entry each
+  record_options = lambda do |param, selected, records, none: none_label, &name|
+    [[all_label, list_path.call(param => nil), selected.nil?],
+     [none, list_path.call(param => 'none'), selected == 'none']] +
+      records.map { |r| [name.call(r), list_path.call(param => r.id), selected == r.id.to_s] }
+  end
+%>
+<div class="sq-top">
+  <h2><%= RedmineSequentialTasks::TabLabel.text %></h2>
+  <%= sq_view_switch(@project, @view, list_path) %>
+  <% if @view == 'timeline' %>
+    <%= sq_segment([[l('sequential_tasks.toolbar.zoom_day'), list_path.call(zoom: 'days'), @zoom == 'days'],
+                    [l('sequential_tasks.toolbar.zoom_week'), list_path.call(zoom: 'weeks'), @zoom == 'weeks'],
+                    [l('sequential_tasks.toolbar.zoom_month'), list_path.call(zoom: 'months'), @zoom == 'months']]) %>
+  <% else %>
+    <%= sq_dropdown(l('sequential_tasks.toolbar.tracker_filter'), 'tracker',
+                    [[l(:label_all), list_path.call(tracker_id: nil), @tracker_filter.blank?]] +
+                    @enabled_trackers.map { |t| [t.name, list_path.call(tracker_id: t.id), @tracker_filter == t.id] }) %>
+  <% end %>
+
+  <div class="sq-legend">
+    <span><i class="sq-lg sq-lg-done"></i> <%= l('sequential_tasks.toolbar.legend_done') %></span>
+    <span><i class="sq-lg sq-lg-cur"></i> <%= l('sequential_tasks.toolbar.legend_in_progress') %></span>
+    <span><i class="sq-lg sq-lg-future"></i> <%= l('sequential_tasks.toolbar.legend_planned') %></span>
+    <span><i class="sq-lg sq-lg-delayed"></i> ⚠️ <%= l('sequential_tasks.toolbar.legend_delayed') %></span>
+    <% if @milestones.any? { |m| m[:kind] == :version } %><span><i class="sq-lg-d sq-ms-version"></i> <%= l('sequential_tasks.toolbar.legend_version') %></span><% end %>
+    <% if @milestones.any? { |m| m[:kind] == :issue } %><span><i class="sq-lg-d sq-ms-issue"></i> <%= l('sequential_tasks.toolbar.legend_event') %></span><% end %>
+  </div>
+</div>
+
+<div class="sq-tb">
+  <%# Finished and not-started issues: the two switches stay on one line %>
+  <span class="sq-nowrap">
+    <%= sq_switch('show-closed', l('sequential_tasks.toolbar.show_closed', count: @closed_total), @show_closed,
+                  list_path.call(show_closed: @show_closed ? '0' : '1')) %>
+    <%= sq_switch('show-pending', l('sequential_tasks.toolbar.show_pending', count: @pending_total), @show_pending,
+                  list_path.call(show_pending: @show_pending ? '0' : '1')) %>
+  </span>
+
+  <% if @versions.any? %>
+    <%= sq_dropdown(l('sequential_tasks.toolbar.version_filter'), 'version',
+                    record_options.call(:version_id, @version_filter, @versions) { |v| format_version_name(v) }) %>
+  <% end %>
+  <% if @categories.any? %>
+    <%= sq_dropdown(l('sequential_tasks.toolbar.category_filter'), 'category',
+                    record_options.call(:category_id, @category_filter, @categories, none: l('sequential_tasks.toolbar.category_none')) { |c| c.name }) %>
+  <% end %>
+  <% if @stage_status_ids.any? %>
+    <%= sq_dropdown(l('sequential_tasks.toolbar.stage_filter'), 'stage',
+                    [[all_label, list_path.call(stage: nil), @stage_filter.nil?]] +
+                    @stage_status_ids.map { |id| [@status_names[id], list_path.call(stage: id), @stage_filter == id] }) %>
+  <% end %>
+  <%= sq_dropdown(l('sequential_tasks.toolbar.state_filter'), 'state',
+                  [[l('sequential_tasks.toolbar.state_all'), list_path.call(state: nil), @state_filter.nil?]] +
+                  %w[delayed ahead in_progress release_risk slow].map { |k| [l("sequential_tasks.toolbar.state_#{k}"), list_path.call(state: k), @state_filter == k] }) %>
+
+  <%# The sort kind. The reorder mode button is in the table header %>
+  <%= sq_dropdown(l('sequential_tasks.toolbar.sort_by'), 'sort',
+                  %w[manual due delay updated].map { |k| [l("sequential_tasks.toolbar.sort_#{k}"), list_path.call(sort: (k == 'manual' ? nil : k)), @sort == k] }) %>
+
+  <% if @view == 'timeline' %>
+    <%= sq_dropdown(l('sequential_tasks.toolbar.group_by'), 'group',
+                    [['none', l(:label_none)], %w[tracker group_tracker], %w[assigned_to group_assignee], %w[version group_version],
+                     %w[category group_category], %w[status group_status]].map do |key, text|
+                      [key == 'none' ? text : l("sequential_tasks.toolbar.#{text}"), list_path.call(group_by: key), @group_by == key]
+                    end) %>
+    <% if @group_by != 'none' %>
+      <span class="sq-links">
+        <a href="#" data-act="groups-expand"><%= l('sequential_tasks.toolbar.expand_all') %></a> /
+        <a href="#" data-act="groups-collapse"><%= l('sequential_tasks.toolbar.collapse_all') %></a>
+      </span>
+    <% end %>
+    <label class="sq-check"><input type="checkbox" id="toggle-lightning" data-act="lightning" checked> ⚡ <%= l('sequential_tasks.toolbar.lightning') %></label>
+    <label class="sq-check"><input type="checkbox" data-act="slow" checked> 🐢 <%= l('sequential_tasks.toolbar.slow_chip') %></label>
+    <% if @milestones.any? %>
+      <label class="sq-check"><input type="checkbox" data-act="ms-lines"> ◆ <%= l('sequential_tasks.toolbar.ms_lines') %></label>
+    <% end %>
+    <% if @band[:lanes].size > RedmineSequentialTasks::Band::VISIBLE_LANES %>
+      <label class="sq-check"><input type="checkbox" data-act="band-more"<%= raw %( title="#{h(l('sequential_tasks.toolbar.band_overflow', count: @band[:overflow]))}") if @band[:overflow] > 0 %>> ▤ <%= l('sequential_tasks.toolbar.band_more') %></label>
+    <% end %>
+  <% end %>
+
+  <%# The full view: no scroll frame, every row and every date at once (for a whole-page screenshot, a PDF, or the browser's zoom) %>
+  <label class="sq-check" title="<%= l('sequential_tasks.toolbar.full_view_title') %>"><input type="checkbox" data-act="full-view"> ▭ <%= l('sequential_tasks.toolbar.full_view') %></label>
+
+  <%# Shown by the script when there are branches %>
+  <span id="sq-branch-folds" class="sq-links" hidden>
+    <a href="#" data-act="branches-expand">🌿 <%= l('sequential_tasks.toolbar.branches_expand') %></a> /
+    <a href="#" data-act="branches-collapse"><%= l('sequential_tasks.toolbar.branches_collapse') %></a>
+  </span>
+</div>

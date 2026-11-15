@@ -1,0 +1,410 @@
+/*
+ * Sequential Tasks: project screens (timeline and matrix).
+ * The per-issue markup only carries class names; colors and sizes live here so the page stays small and the
+ * browser can cache this file. Everything is scoped by #sq-root.
+ * Column widths are set once by <colgroup>, the timeline grid by one background in the page's <style>.
+ */
+
+/* ---- tables */
+#sq-root { --sq-issue-w: 280px; --sq-state-w: 85px; --sq-tier-h: 23px; } /* the state column's width is also set in the page (colgroup) */
+#sq-root .sq-tl { border-collapse: collapse; table-layout: fixed; }
+#sq-root .sq-mx { border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: 12px; }
+
+/* ---- scrolling: the page does not scroll, only this container does (the script sets its max-height from the
+   window height), so everything above the table stays put. The header cells stick to its top, the left
+   columns to its left. Layers, from the top: header corner 40 > date header 30 > group header label 29 > task cells 20
+   > lightning line 15 > group header fill 12 > bars 10. So the lightning line crosses the group header bands and the
+   bars, but runs under the task columns (and under the date header). The label cell is above the fill cell:
+   scrolled sideways, the fill slides under the sticky label. */
+#sq-root .sq-scroller { overflow: auto; position: relative; max-width: 100%; max-height: 70vh; }
+/* the table runs down to Redmine's footer: no padding under it on these screens */
+#content:has(#sq-root) { padding-bottom: 0; }
+
+/* ---- header cells (the lines between cells are set per table: see "vertical lines" below) */
+#sq-root th.sq-th-issue, #sq-root th.sq-th-state, #sq-root th.sq-th-slot { box-sizing: border-box; color: #475569; background: #f8fafc; }
+#sq-root th.sq-th-issue { position: sticky; top: 0; left: 0; z-index: 40; text-align: left; padding: 6px 10px; }
+#sq-root th.sq-th-state { position: sticky; top: 0; left: var(--sq-issue-w); z-index: 40; text-align: center; padding: 6px 2px; }
+#sq-root th.sq-th-slot { position: sticky; top: 0; z-index: 30; text-align: center; padding: 1px; line-height: 20px; height: var(--sq-tier-h); font-size: 13px; }
+#sq-root th.sq-th-slot.sq-t2 { top: var(--sq-tier-h); }
+#sq-root th.sq-th-slot.sq-t1, #sq-root th.sq-th-slot.sq-nm:not(.sq-today) { color: #1e40af; font-weight: bold; }
+#sq-root th.sq-th-slot.sq-weekend { background: #f1f5f9; color: #94a3b8; }
+#sq-root th.sq-th-slot.sq-today { background: #eff6ff; color: #2563eb; }
+#sq-root th.sq-th-slot .sq-d1 { font-weight: bold; }
+#sq-root th.sq-th-slot.sq-today .sq-d1 { text-decoration: underline; }
+/* The month (or year) label stays at the left edge of the visible dates while its month scrolls by, and leaves
+   with the end of the month. It slides under the two left columns. */
+#sq-root th.sq-th-slot.sq-t1 { text-align: left; }
+#sq-root .sq-stick { position: sticky; display: inline-block; left: calc(var(--sq-issue-w) + var(--sq-state-w) + 8px); white-space: nowrap; }
+#sq-root .sq-thw { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding-right: 4px; }
+/* the grip at the right edge of the issue column: dragging it sets the column's width (sequential_tasks.js) */
+#sq-root .sq-rz { position: absolute; top: 0; right: -3px; width: 7px; height: 100%; cursor: col-resize; z-index: 5; }
+#sq-root .sq-rz:hover, #sq-root .sq-rz.sq-active { background: rgba(37, 99, 235, 0.35); }
+
+/* ---- the milestone row: one fixed row under the date header; the points sit at a percentage of its width
+   (the same percentages as the grid), the labels are cut before the next point */
+#sq-root .sq-ms-row { height: 26px; }
+#sq-root th.sq-th-ms { position: sticky; z-index: 30; box-sizing: border-box; height: 26px; padding: 0; overflow: hidden; background: #fdfcff; text-align: left; font-weight: normal; box-shadow: inset 0 -1px 0 #e2e8f0; }
+#sq-root tr.sq-ms-end > th.sq-th-ms { box-shadow: inset 0 -2px 0 #cbd5e1; }
+#sq-root a.sq-ms { position: absolute; top: 4px; display: inline-flex; align-items: center; gap: 5px; margin-left: -6px; font-size: 11px; font-weight: bold; text-decoration: none; white-space: nowrap; color: #334155; --ms-c: #7c3aed; }
+#sq-root a.sq-ms-issue { --ms-c: #0891b2; }
+#sq-root a.sq-ms > i, .sq-lg-d { display: inline-block; flex-shrink: 0; width: 9px; height: 9px; margin: 1px 1px 0; transform: rotate(45deg); background: var(--ms-c); border: 1px solid #fff; box-shadow: 0 0 0 1px var(--ms-c); }
+#sq-root a.sq-ms > span { overflow: hidden; text-overflow: ellipsis; }
+#sq-root a.sq-ms-closed { --ms-c: #94a3b8; color: #94a3b8; }
+#sq-root a.sq-ms:hover > span { text-decoration: underline; }
+.sq-lg-d { --ms-c: #7c3aed; margin: 0 2px; }
+.sq-lg-d.sq-ms-issue { --ms-c: #0891b2; }
+
+/* ---- the band under the milestone row: one fixed row (22px) per lane; the bars sit at percentages of its width.
+   Only the first two lanes show until the toolbar switch (class sq-band-all on #sq-root) is on; the thick line under
+   the header is on the last row that shows. */
+#sq-root .sq-band-row { height: 22px; }
+#sq-root th.sq-th-band { position: sticky; z-index: 30; box-sizing: border-box; height: 22px; padding: 0; overflow: hidden; background: #fdfcff; text-align: left; font-weight: normal; box-shadow: inset 0 -1px 0 #ede9fe; }
+#sq-root:not(.sq-band-all) tr.sq-band-extra { display: none; }
+#sq-root:not(.sq-band-all) tr.sq-band-end > th.sq-th-band, #sq-root.sq-band-all tr.sq-band-last > th.sq-th-band { box-shadow: inset 0 -2px 0 #cbd5e1; }
+#sq-root a.sq-band-bar { position: absolute; top: 3px; height: 16px; box-sizing: border-box; padding: 0 6px; overflow: hidden; border: 1px solid var(--c); border-radius: 3px; font-size: 10px; font-weight: bold; line-height: 14px; white-space: nowrap; text-overflow: ellipsis; text-decoration: none; color: #1e293b; --c: #7c3aed; --cl: #ede9fe; --cd: #c4b5fd;
+  background: linear-gradient(to right, var(--cd) var(--p, 0%), var(--cl) var(--p, 0%)); }
+#sq-root a.sq-band-issue { --c: #0891b2; --cl: #ecfeff; --cd: #a5f3fc; }
+#sq-root a.sq-band-chain { --c: #64748b; --cl: #f1f5f9; --cd: #cbd5e1; }
+#sq-root a.sq-band-closed { --c: #94a3b8; --cl: #f8fafc; --cd: #e2e8f0; color: #94a3b8; }
+#sq-root a.sq-band-bar:hover { text-decoration: underline; }
+
+/* ---- vertical lines
+   Timeline (collapsed borders): borders do not travel with sticky cells, and they would add their width to the table
+   (the surplus was spread over the date columns, so the header drifted away from the grid of the rows). So there are
+   no vertical borders: every line is an inset shadow. The edge of a month (or year) is a strong line, the edge of a
+   week a medium one; the grid of the rows (the page's <style>) uses the same. */
+#sq-root .sq-tl thead tr { height: var(--sq-tier-h); }
+#sq-root .sq-tl th.sq-th-issue { box-shadow: inset -1px 0 0 #cbd5e1, inset 0 -2px 0 #cbd5e1; }
+#sq-root .sq-tl th.sq-th-state { box-shadow: inset -2px 0 0 #cbd5e1, inset 0 -2px 0 #cbd5e1; }
+#sq-root .sq-tl th.sq-th-slot { box-shadow: inset -1px 0 0 #e2e8f0, inset 0 -1px 0 #cbd5e1; }
+#sq-root .sq-tl th.sq-th-slot.sq-bw { box-shadow: inset -1px 0 0 #94a3b8, inset 0 -1px 0 #cbd5e1; }
+#sq-root .sq-tl th.sq-th-slot.sq-bs { box-shadow: inset -2px 0 0 #64748b, inset 0 -1px 0 #cbd5e1; }
+#sq-root .sq-tl td.sq-c-issue, #sq-root .sq-tl td.sq-c-branch { box-shadow: inset -1px 0 0 #e2e8f0; }
+#sq-root .sq-tl td.sq-c-state, #sq-root .sq-tl td.sq-c-branch-state, #sq-root .sq-tl th.sq-gh { box-shadow: inset -2px 0 0 #cbd5e1; }
+/* Matrix (separate borders): ordinary borders */
+#sq-root .sq-mx th.sq-th-issue { border-right: 1px solid #cbd5e1; border-bottom: 2px solid #cbd5e1; }
+#sq-root .sq-mx th.sq-th-state { border-right: 2px solid #cbd5e1; border-bottom: 2px solid #cbd5e1; }
+#sq-root .sq-mx th.sq-th-step { position: sticky; top: 0; z-index: 30; }
+#sq-root .sq-mx td.sq-c-issue, #sq-root .sq-mx td.sq-c-branch { border-right: 1px solid #e2e8f0; }
+#sq-root .sq-mx td.sq-c-state, #sq-root .sq-mx td.sq-c-branch-state { border-right: 2px solid #cbd5e1; }
+
+/* ---- rows */
+#sq-root .sq-row { border-bottom: 1px solid #e2e8f0; transition: background 0.15s; }
+#sq-root .sq-tl .sq-row { height: 34px; }
+#sq-root .sq-mx .sq-row { height: 48px; }
+#sq-root .sq-mx tbody tr.sq-row:nth-child(even) { background: #fcfcfd; }
+#sq-root .sq-row:hover { background: #f8fafc; }
+#sq-root td.sq-sticky { position: sticky; box-sizing: border-box; vertical-align: middle; background: #fff; z-index: 20; }
+#sq-root .sq-mx td.sq-sticky { z-index: 5; }
+#sq-root .sq-mx tbody tr.sq-row:nth-child(even) > td.sq-sticky { background: #fcfcfd; }
+#sq-root .sq-row:hover > td.sq-sticky { background: #f8fafc; }
+#sq-root td.sq-c-issue { left: 0; padding: 4px 8px; }
+#sq-root td.sq-c-state { left: var(--sq-issue-w); padding: 2px 4px; text-align: center; }
+#sq-root td.sq-track { position: relative; padding: 0; vertical-align: middle; height: 34px; box-sizing: border-box; }
+
+/* ---- group headers (timeline): they stick under the table header while their group scrolls; the next
+   group's header takes the same place and covers the previous one */
+#sq-root tr.group-header-row { height: 26px; cursor: pointer; user-select: none; }
+#sq-root .sq-gh, #sq-root .sq-gh-fill { position: sticky; top: var(--sq-head-h, 36px); z-index: 12; box-sizing: border-box; box-shadow: inset 0 -1px 0 #cbd5e1; }
+#sq-root th.sq-gh { z-index: 29; left: 0; text-align: left; padding: 3px 10px; font-weight: bold; font-size: 11px; color: #334155; background: #f1f5f9; }
+#sq-root td.sq-gh-fill { background: #f8fafc; }
+#sq-root .sq-gh-icon { display: inline-block; width: 12px; font-size: 9px; color: #475569; }
+#sq-root .sq-gh-count { font-size: 10px; font-weight: normal; color: #64748b; }
+
+/* ---- the issue cell */
+#sq-root .sq-ib { display: flex; align-items: center; gap: 5px; white-space: nowrap; overflow: hidden; width: 100%; }
+#sq-root .sq-tree { font-size: 10px; color: #15803d; font-weight: bold; flex-shrink: 0; }
+#sq-root .sq-chip { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 0 4px; border-radius: 3px; font-size: 10px; flex-shrink: 0; line-height: 1.4; }
+#sq-root .sq-chip.sq-chip-oos { background: #fff7ed; color: #c2410c; border-color: #fdba74; }
+#sq-root a.sq-subj { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: bold; font-size: 11px; flex-grow: 1; color: #1e40af; text-decoration: none; }
+/* narrow column: the assignee gives way first (it shrinks much faster than the subject and may go down to nothing; the full name is in the tooltip) */
+#sq-root .sq-asg { font-size: 10px; color: #94a3b8; flex-shrink: 100; min-width: 0; overflow: hidden; text-overflow: ellipsis; margin-left: 2px; }
+/* no assignee: red, so that it is noticed */
+#sq-root .sq-asg.sq-none { padding: 0 4px; border: 1px solid #fecaca; border-radius: 3px; background: #fef2f2; color: #b91c1c; font-weight: bold; }
+#sq-root a.sq-plus { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 3px; font-size: 9px; text-decoration: none; font-weight: bold; flex-shrink: 0; margin-left: 2px; }
+
+/* ---- the state column */
+#sq-root .sq-sb { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: bold; white-space: nowrap; border: 1px solid #cbd5e1; background: #f8fafc; color: #334155; }
+#sq-root .sq-sb-closed { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+#sq-root .sq-sb-delayed { background: #fee2e2; color: #b91c1c; border-color: #f87171; padding: 1px 5px; }
+#sq-root .sq-sb-pending { background: #fff; color: #94a3b8; border: 1px dashed #cbd5e1; font-weight: normal; }
+#sq-root .sq-sb-ahead { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+#sq-root .sq-oos { margin-top: 2px; font-size: 9px; color: #c2410c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---- the lightning line: above the bars and the group header bands, under the task columns */
+#sq-root #lightning-svg { z-index: 15; }
+
+/* ---- timeline bars: position and the stage color are the only inline values (left, width, --c) */
+#sq-root .sq-bar { position: absolute; top: 7px; height: 20px; box-sizing: border-box; padding: 0 4px; border-radius: 4px; line-height: 16px; text-align: center; font-size: 10px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; z-index: 10; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+/* A finished stage is pale (it is behind us), the current one stands out, a coming one is dashed */
+:is(#sq-root, #sq-stage-timeline) .sq-bar-cur, :is(#sq-root, #sq-stage-timeline) .sq-bar-delayed { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+:is(#sq-root, #sq-stage-timeline) .sq-bar-done { background: color-mix(in srgb, var(--c) 38%, #fff); border: 1px solid color-mix(in srgb, var(--c) 55%, #fff); color: #475569; line-height: 18px; }
+:is(#sq-root, #sq-stage-timeline) .sq-bar-done::before { content: '✓ '; }
+:is(#sq-root, #sq-stage-timeline) .sq-bar-cur { background: var(--c); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+:is(#sq-root, #sq-stage-timeline) .sq-bar-cur::before { content: '▶ '; }
+:is(#sq-root, #sq-stage-timeline) .sq-bar-delayed { background: #ef4444; border: 2px solid #b91c1c; box-shadow: 0 0 8px rgba(239,68,68,0.7); }
+:is(#sq-root, #sq-stage-timeline) .sq-bar-delayed::before { content: '⚠️ '; }
+:is(#sq-root, #sq-stage-timeline) .sq-bar-future { background: color-mix(in srgb, var(--c) 22%, transparent); border: 1.5px dashed var(--c); color: var(--c); line-height: 17px; }
+:is(#sq-root, #sq-stage-timeline) .sq-bar-skipped { background: rgba(148,163,184,0.18); border: 1.5px dashed #94a3b8; color: #94a3b8; text-decoration: line-through; line-height: 17px; }
+:is(#sq-root, #sq-stage-timeline) .sq-bar-skipped::before { content: '- '; }
+/* Subtle look (plugin setting bar_style): a pale fill, an edge in the stage color, dark text. The state stays readable: done = solid edge and a check, current = thicker edge and an arrow, delayed = red, planned = dashed. */
+:is(#sq-root, #sq-stage-timeline) .sq-style-subtle .sq-bar-done, :is(#sq-root, #sq-stage-timeline) .sq-style-subtle .sq-bar-cur, :is(#sq-root, #sq-stage-timeline) .sq-style-subtle .sq-bar-delayed { color: #1e293b; text-shadow: none; box-shadow: none; }
+:is(#sq-root, #sq-stage-timeline) .sq-style-subtle .sq-bar-done { background: color-mix(in srgb, var(--c) 14%, #fff); border: 1px solid color-mix(in srgb, var(--c) 45%, #fff); border-left: 5px solid color-mix(in srgb, var(--c) 60%, #fff); color: #64748b; }
+:is(#sq-root, #sq-stage-timeline) .sq-style-subtle .sq-bar-cur { background: color-mix(in srgb, var(--c) 38%, #fff); border: 2px solid var(--c); border-left: 6px solid var(--c); }
+:is(#sq-root, #sq-stage-timeline) .sq-style-subtle .sq-bar-delayed { background: #fee2e2; border: 2px solid #ef4444; border-left: 6px solid #ef4444; color: #991b1b; }
+:is(#sq-root, #sq-stage-timeline) .sq-style-subtle .sq-bar-future { border-left: 5px solid var(--c); color: #334155; }
+/* Light look: a nearly white chip, a gray border, an edge in the stage color. done = check, current = dark border and arrow, delayed = red edge and text, planned = dashed border. */
+:is(#sq-root, #sq-stage-timeline) .sq-style-light .sq-bar-done, :is(#sq-root, #sq-stage-timeline) .sq-style-light .sq-bar-cur, :is(#sq-root, #sq-stage-timeline) .sq-style-light .sq-bar-delayed, :is(#sq-root, #sq-stage-timeline) .sq-style-light .sq-bar-future { background: #f8fafc; color: #334155; text-shadow: none; box-shadow: none; border: 1px solid #cbd5e1; border-left: 5px solid var(--c); line-height: 18px; }
+:is(#sq-root, #sq-stage-timeline) .sq-style-light .sq-bar-cur { border: 2px solid #64748b; border-left: 6px solid var(--c); line-height: 16px; background: #fff; }
+:is(#sq-root, #sq-stage-timeline) .sq-style-light .sq-bar-delayed { border: 2px solid #ef4444; border-left: 6px solid #ef4444; color: #b91c1c; background: #fef2f2; line-height: 16px; }
+:is(#sq-root, #sq-stage-timeline) .sq-style-light .sq-bar-future { border-style: dashed; border-left-style: solid; }
+
+/* ---- matrix cells */
+#sq-root .sq-mx td.sq-cell { padding: 3px 6px; vertical-align: middle; box-sizing: border-box; background: #fff; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+#sq-root .sq-cs-skip, #sq-root .sq-cs-none { background: #f8fafc !important; }
+#sq-root .sq-cs-none { text-align: center; color: #cbd5e1; font-size: 13px; }
+#sq-root .sq-cs-done { background: #f0fdf4 !important; border-color: #bbf7d0 !important; }
+#sq-root .sq-cs-late { background: #fffbeb !important; border-color: #fde68a !important; }
+#sq-root .sq-cs-delay { background: #fef2f2 !important; border-color: #fca5a5 !important; }
+#sq-root .sq-cs-prog { background: #eff6ff !important; border-color: #bfdbfe !important; }
+#sq-root .sq-cs-pend { border-color: #f1f5f9 !important; }
+#sq-root .sq-r { display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: #334155; margin-bottom: 1px; }
+#sq-root .sq-r::before { color: #64748b; font-size: 9px; font-weight: 400; }
+#sq-root .sq-rp { font-weight: 600; }
+#sq-root .sq-ra { color: #475569; }
+#sq-root .sq-ra.sq-empty { color: #cbd5e1; }
+#sq-root .sq-ip { color: #2563eb; font-weight: 600; }
+#sq-root .sq-cb { display: block; width: fit-content; margin: 1px 0 0 auto; padding: 0 4px; border-radius: 3px; font-size: 9px; border: 1px solid #e2e8f0; background: #f8fafc; color: #94a3b8; }
+#sq-root .sq-cb-skip { background: #f1f5f9; border-color: #cbd5e1; }
+#sq-root .sq-cb-done { background: #dcfce7; color: #15803d; border-color: #86efac; font-weight: 600; }
+#sq-root .sq-cb-late { background: #fef3c7; color: #b45309; border-color: #fcd34d; font-weight: 600; }
+#sq-root .sq-cb-delay { background: #fee2e2; color: #b91c1c; border-color: #f87171; font-weight: bold; }
+#sq-root .sq-cb-prog { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; font-weight: 600; }
+
+/* ---- the inline "create a branched task" row (built by sequential_tasks.js from the page's template) */
+#sq-root tr.sq-branch-row { background: #f0fdf4; border-bottom: 1.5px dashed #86efac; height: 32px; }
+#sq-root td.sq-c-branch { left: 0; padding: 2px 8px; background: #f0fdf4; }
+#sq-root td.sq-c-branch-state { left: var(--sq-issue-w); padding: 2px 4px; text-align: center; white-space: nowrap; background: #f0fdf4; }
+#sq-root td.sq-c-branch-state button { padding: 2px 7px; font-size: 10px; border: none; border-radius: 3px; cursor: pointer; background: #e2e8f0; color: #475569; }
+#sq-root td.sq-c-branch-state button[type=submit] { background: #16a34a; color: #fff; font-weight: bold; margin-right: 2px; }
+#sq-root td.sq-branch-note { padding: 0 10px; background: #f0fdf4; color: #166534; font-size: 10px; vertical-align: middle; }
+#sq-root .sq-branch-form { display: flex; align-items: center; gap: 4px; margin: 0; }
+#sq-root .sq-branch-form input[type=text] { flex: 1 1 135px; min-width: 0; width: 135px; font-size: 11px; padding: 2px 5px; border: 1.5px solid #16a34a; border-radius: 3px; background: #fff; color: #1e293b; outline: none; }
+
+/* Reorder mode: the handle exists in every row but shows only while the mode is on */
+#sq-root .sq-hd { display: none; align-items: center; justify-content: center; width: 17px; height: 17px; flex-shrink: 0; margin-left: 2px; border: 1px solid #fcd34d; border-radius: 3px; background: #fffbeb; cursor: grab; color: #b45309; font-size: 13px; line-height: 15px; user-select: none; }
+#sq-root.sq-reorder .sq-hd { display: inline-flex; }
+#sq-root.sq-reorder a.sq-plus { display: none; } /* the handle takes the place of the +branch button */
+#sq-root.sq-reorder tr.issue-row[data-id] { cursor: default; }
+#sq-root tr.sq-dragging { opacity: 0.4; }
+#sq-root tr.sq-drop-before > td { box-shadow: inset 0 2px 0 0 #2563eb; }
+#sq-root tr.sq-drop-after > td { box-shadow: inset 0 -2px 0 0 #2563eb; }
+/* the two left columns of the timeline already draw their vertical line as a shadow (see "vertical lines"): the drop
+   mark is added to it, so the blue line runs across the whole row */
+#sq-root .sq-tl tr.sq-drop-before > td.sq-c-issue { box-shadow: inset 0 2px 0 0 #2563eb, inset -1px 0 0 #e2e8f0; }
+#sq-root .sq-tl tr.sq-drop-before > td.sq-c-state { box-shadow: inset 0 2px 0 0 #2563eb, inset -2px 0 0 #cbd5e1; }
+#sq-root .sq-tl tr.sq-drop-after > td.sq-c-issue { box-shadow: inset 0 -2px 0 0 #2563eb, inset -1px 0 0 #e2e8f0; }
+#sq-root .sq-tl tr.sq-drop-after > td.sq-c-state { box-shadow: inset 0 -2px 0 0 #2563eb, inset -2px 0 0 #cbd5e1; }
+
+/* ---- the issue cell: fold button and orphan chip (see sequential_tasks.js and the page) */
+#sq-root tr.sq-folded { display: none; }
+#sq-root .sq-fold { flex-shrink: 0; margin-left: 2px; padding: 0 4px; height: 17px; font-size: 9px; line-height: 15px; border: 1px solid #a7f3d0; border-radius: 3px; background: #ffffff; color: #047857; cursor: pointer; white-space: nowrap; }
+#sq-root .sq-fold:hover { background: #ecfdf5; }
+#sq-root a.sq-orphan { flex-shrink: 0; font-size: 10px; color: #64748b; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 9px; padding: 0 6px; text-decoration: none; white-space: nowrap; }
+#sq-root a.sq-orphan:hover { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+
+/* Delayed issues: the subject is red too, while the lightning line is on (the matrix has no lightning line: always) */
+#sq-root.sq-lightning-on tr.is-delayed a.sq-subj, #sq-root tr[data-delayed="true"] a.sq-subj { color: #b91c1c; }
+
+/* ---- toolbar (above #sq-root): the title with the view switch and the legend, then the filters */
+.sq-top, .sq-tb { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.sq-top { margin-bottom: 6px; }
+.sq-top h2 { margin: 0; }
+.sq-tb { margin: 0 0 6px; }
+.sq-nowrap { display: inline-flex; align-items: center; gap: 12px; white-space: nowrap; }
+.sq-seg { display: inline-flex; border: 1px solid #cbd5e1; border-radius: 4px; overflow: hidden; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.sq-seg a { padding: 3px 10px; font-size: 11px; font-weight: bold; text-decoration: none; color: #475569; background: #fff; border-right: 1px solid #cbd5e1; }
+.sq-seg a:last-child { border-right: 0; }
+.sq-seg a.sq-active { background: #2563eb; color: #fff; }
+.sq-field { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: #475569; }
+.sq-check { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; cursor: pointer; }
+.sq-links { font-size: 11px; }
+.sq-links a { text-decoration: none; color: #2563eb; }
+/* dropdowns look like dropdowns (an arrow on the right) */
+select.sq-select { appearance: none; -webkit-appearance: none; padding: 2px 20px 2px 6px !important; font-size: 11px; font-weight: bold; color: #334155; cursor: pointer; border: 1px solid #cbd5e1; border-radius: 4px;
+  background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2364748b'/%3E%3C/svg%3E") no-repeat right 6px center !important; }
+select.sq-select:hover { border-color: #93c5fd; }
+/* the reorder mode is a button that changes color (off: outline, on: filled orange); it sits in the table header */
+.sq-mode-btn { padding: 1px 8px; font-size: 11px; white-space: nowrap; flex-shrink: 0; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff; color: #475569; cursor: pointer; }
+.sq-mode-btn:hover { border-color: #f59e0b; }
+.sq-mode-btn.sq-on { background: #f59e0b; border-color: #d97706; color: #ffffff; box-shadow: 0 0 0 2px #fde68a; }
+/* The adjust mode: its button, its controls above the table, and what the bars look like while it is on */
+.sq-adjust-btn { margin-left: 4px; padding: 1px 8px; font-size: 11px; white-space: nowrap; flex-shrink: 0; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff; color: #475569; cursor: pointer; }
+.sq-adjust-btn:hover { border-color: #2563eb; }
+.sq-adjust-btn.sq-on { background: #2563eb; border-color: #1d4ed8; color: #ffffff; box-shadow: 0 0 0 2px #bfdbfe; }
+/* While adjusting, the screen says so: a blue strip with the title above the table, a blue frame, and a blue header */
+#sq-root .sq-adjust-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: 0 0 6px; padding: 6px 12px; background: #2563eb; border: 1px solid #1d4ed8; border-radius: 4px; font-size: 11px; color: #ffffff; box-shadow: 0 1px 4px rgba(37,99,235,0.35); }
+#sq-root .sq-adjust-title { font-size: 13px; font-weight: bold; letter-spacing: 0.02em; }
+#sq-root .sq-adjust-bar[hidden] { display: none; }
+#sq-root .sq-adjust-modes { display: inline-flex; border: 1px solid #93c5fd; border-radius: 4px; overflow: hidden; background: #fff; }
+#sq-root .sq-adjust-modes label { padding: 2px 10px; cursor: pointer; }
+#sq-root .sq-adjust-modes label + label { border-left: 1px solid #93c5fd; }
+#sq-root .sq-adjust-modes label:has(input:checked) { background: #2563eb; color: #fff; }
+#sq-root .sq-adjust-hint { color: #ffffff; }
+#sq-root .sq-adjust-saves { padding: 1px 8px; border-radius: 10px; background: #ffffff; color: #1d4ed8; font-weight: bold; }
+#sq-root.sq-adjust.sq-adj-fixed .sq-bar[data-last]::after { display: none; } /* the due date edge stays in "due date first" */
+#sq-root tr.sq-adj-saving .sq-bar { pointer-events: none; }
+#sq-adj-tip.sq-adj-tip-warn { background: #c2410c; }
+#sq-adj-tip.sq-adj-tip-ok { background: #047857; }
+#sq-root .sq-adjust-modes { color: #1e3a8a; }
+#sq-root.sq-adjust .sq-frame { border-color: #2563eb; box-shadow: 0 0 0 2px #93c5fd; }
+#sq-root.sq-adjust th.sq-th-issue, #sq-root.sq-adjust th.sq-th-state, #sq-root.sq-adjust th.sq-th-slot { background: #dbeafe; color: #1e3a8a; }
+#sq-root.sq-adjust th.sq-th-slot.sq-weekend { background: #c7d7f0; color: #475569; }
+#sq-root.sq-adjust th.sq-th-slot.sq-today { background: #bfdbfe; color: #1d4ed8; }
+#sq-root.sq-adjust .sq-bar[data-sid] { cursor: grab; user-select: none; touch-action: none; }
+#sq-root.sq-adjust .sq-bar[data-sid]::after { content: ''; position: absolute; right: 1px; top: 2px; bottom: 2px; width: 4px; border-radius: 2px; background: rgba(255,255,255,0.95); box-shadow: 0 0 0 1px rgba(15,23,42,0.45); }
+#sq-root.sq-adjust .sq-bar:not([data-sid]) { opacity: 0.55; cursor: default; }
+#sq-root .sq-bar.sq-adj-bad { outline: 2px solid #dc2626; outline-offset: 1px; }
+#sq-root tr.sq-adj-saving .sq-bar { opacity: 0.5; }
+#sq-adj-tip { position: fixed; z-index: 1000; padding: 2px 8px; border-radius: 4px; background: #1e3a8a; color: #fff; font-size: 11px; font-weight: bold; pointer-events: none; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.25); }
+#sq-adj-tip.sq-adj-tip-bad { background: #dc2626; }
+.sq-legend { margin-left: auto; display: inline-flex; align-items: center; gap: 10px; font-size: 11px; color: #475569; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 3px 8px; }
+.sq-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.sq-lg { display: inline-block; width: 12px; height: 10px; border-radius: 2px; }
+.sq-lg-done { background: #15803d; }
+.sq-lg-cur { background: #0284c7; border: 1.5px solid #ffffff; box-shadow: 0 0 2px rgba(0,0,0,0.5); }
+.sq-lg-future { background: #f8fafc; border: 1px dashed #94a3b8; }
+.sq-lg-delayed { background: #ef4444; border: 1.5px solid #b91c1c; }
+
+/* ---- will the issue make its release?: a mark at the release date in the issue's own row (green: in time,
+   red: late), a chip for the late ones, and the count of late ones in the header of a version group */
+#sq-root i.sq-rel { position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px dashed #16a34a; opacity: 0.75; pointer-events: auto; z-index: 9; }
+#sq-root i.sq-rel-late { border-left-color: #dc2626; opacity: 0.9; }
+#sq-root .sq-rl { flex-shrink: 0; padding: 0 4px; border: 1px solid #fca5a5; border-radius: 3px; background: #fef2f2; color: #b91c1c; font-size: 9px; font-weight: bold; line-height: 14px; white-space: nowrap; }
+#sq-root .sq-gh-risk { margin-left: 4px; padding: 0 4px; border: 1px solid #fca5a5; border-radius: 3px; background: #fef2f2; color: #b91c1c; font-size: 10px; font-weight: bold; }
+
+/* ---- moving an issue to another version by dragging it to another group */
+#sq-root tr.group-header-row.sq-drop-group > th, #sq-root tr.group-header-row.sq-drop-group > td { background: #dbeafe; box-shadow: inset 0 0 0 2px #2563eb; }
+#sq-root tr.sq-moved > td { background: #fef9c3 !important; transition: background 1s; }
+
+/* ---- how far are the branches?: "done/total" next to the assignee of the parent */
+#sq-root .sq-bc { flex-shrink: 0; margin-left: 2px; padding: 0 5px; border: 1px solid #cbd5e1; border-radius: 9px; background: #f8fafc; color: #475569; font-size: 10px; font-weight: bold; line-height: 14px; white-space: nowrap; }
+#sq-root .sq-bc-done { border-color: #86efac; background: #f0fdf4; color: #15803d; }
+#sq-root .sq-bc-warn { border-color: #fdba74; background: #fff7ed; color: #c2410c; }
+
+/* ---- slower than usual: "usual x1.8" next to the subject; the analysis screen */
+#sq-root .sq-sl { flex-shrink: 0; padding: 0 4px; border: 1px solid #fcd34d; border-radius: 3px; background: #fffbeb; color: #b45309; font-size: 9px; font-weight: bold; line-height: 14px; white-space: nowrap; }
+#sq-root.sq-slow-off .sq-sl { display: none; }
+#sq-root.sq-analysis h3 { margin: 18px 0 6px; }
+table.sq-an { border-collapse: collapse; background: #fff; font-size: 12px; }
+table.sq-an th, table.sq-an td { padding: 5px 12px; border: 1px solid #e2e8f0; text-align: right; }
+table.sq-an th { background: #f8fafc; color: #475569; font-size: 11px; }
+table.sq-an th:first-child, table.sq-an td.sq-an-stage { text-align: left; font-weight: bold; }
+table.sq-an tr.sq-an-bottleneck > td { background: #fff7ed; }
+table.sq-an td.sq-an-slow:not(:empty) { color: #b45309; }
+.sq-an-note { max-width: 70em; margin-top: 14px; font-size: 11px; color: #64748b; }
+
+/* ---- the frame of the timeline, and the full view (a switch of the toolbar) --------------------------------------------
+   The frame has rounded corners that cut what is inside. In the full view the scroll frame is gone: every row and every
+   date is laid out at once, nothing sticks (the cells stay where they are), and the page scrolls. That suits a whole-page
+   screenshot, or the browser zoomed out. Printing gets the same layout (below). */
+#sq-root .sq-frame { margin-top: 15px; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); font-size: 12px; }
+#sq-root.sq-full .sq-frame { overflow: visible; }
+#sq-root.sq-full .sq-scroller { overflow: visible; max-height: none !important; max-width: none; }
+/* Redmine's own frames cut what sticks out of them: the page may grow wider than the window now */
+#wrapper:has(#sq-root.sq-full), #content:has(#sq-root.sq-full) { overflow: visible; }
+/* ... and the page is as wide as the widest table (the script measures it into --sq-full-w on <html>), so it scrolls
+   sideways to all of it */
+#wrapper:has(#sq-root.sq-full) { min-width: var(--sq-full-w, 100%); }
+#sq-root.sq-full th, #sq-root.sq-full td.sq-sticky, #sq-root.sq-full .sq-gh, #sq-root.sq-full .sq-gh-fill { position: relative; top: auto !important; left: auto !important; }
+#sq-root.sq-full .sq-stick { position: static; }
+#sq-root.sq-full tr.sq-band-extra { display: table-row; }
+#sq-root.sq-full .sq-rz { display: none; }
+
+@media print {
+  @page { size: landscape; margin: 8mm; }
+  /* Redmine's frame and the controls are left out; the title and the legend stay */
+  #sq-panel { display: none !important; }
+  body.sq-panel-on { padding-right: 0 !important; }
+  #header, #top-menu, #main-menu, #sidebar, #footer, .sq-tb, .sq-seg, .sq-field, .sq-mode-btn, .sq-adjust-btn, .sq-adjust-bar, .sq-hd, .sq-rz, a.sq-plus, .sq-fold { display: none !important; }
+  #main { margin: 0; }
+  #content { width: 100% !important; padding: 0 !important; float: none; }
+  #sq-root .sq-frame { overflow: visible; }
+  #sq-root .sq-scroller { overflow: visible; max-height: none !important; max-width: none; }
+  #wrapper, #content { overflow: visible !important; }
+  #sq-root th, #sq-root td.sq-sticky, #sq-root .sq-gh, #sq-root .sq-gh-fill { position: relative; top: auto !important; left: auto !important; }
+  #sq-root .sq-stick { position: static; }
+  #sq-root tr.sq-band-extra { display: table-row; }
+  #sq-root tr.sq-folded { display: none; }
+  .sq-an-note { display: none; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+/* ---- the panel for the issue: fixed on the right, the page leaves room for it ---------------------------- */
+:root { --sq-panel-w: clamp(420px, 42vw, 760px); }
+#sq-panel { position: fixed; top: 0; right: 0; bottom: 0; width: var(--sq-panel-w); z-index: 1000; display: flex; flex-direction: column; background: #fff; border-left: 1px solid #cbd5e1; box-shadow: -4px 0 14px rgba(15, 23, 42, 0.16); }
+#sq-panel[hidden] { display: none; }
+#sq-panel .sq-panel-head { display: flex; align-items: center; gap: 10px; padding: 6px 10px; background: #f8fafc; border-bottom: 1px solid #cbd5e1; font-size: 12px; }
+#sq-panel .sq-panel-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: bold; color: #1e293b; }
+#sq-panel .sq-panel-open { white-space: nowrap; font-size: 11px; text-decoration: none; }
+#sq-panel .sq-panel-close { border: 0; background: transparent; font-size: 20px; line-height: 1; cursor: pointer; color: #475569; padding: 0 4px; }
+#sq-panel .sq-panel-close:hover { color: #b91c1c; }
+#sq-panel .sq-panel-frame { flex: 1; width: 100%; border: 0; background: #fff; }
+body.sq-panel-on { padding-right: var(--sq-panel-w); min-width: 0; } /* Redmine gives <body> a minimum width of 900px: with the panel the page would grow wider than the window */
+
+/* The view with an issue at the top, inside the issue page: as tall as its content, scrolling sideways only */
+#sq-root.sq-inline .sq-scroller { max-height: none !important; }
+:is(#sq-root, #sq-stage-timeline) .sq-style-light .sq-bar-done { color: #64748b; border-color: #e2e8f0; border-left-color: color-mix(in srgb, var(--c) 55%, #fff); background: #fafbfc; }
+
+/* A stage of zero days: the wait before somebody picks the issue up. No bar; a thin hatched strip under the bars, faint once it is over. */
+#sq-root .sq-wait { position: absolute; top: 28px; height: 4px; box-sizing: border-box; border: 1px solid #ba7517; border-radius: 2px; background: repeating-linear-gradient(135deg, #ef9f27 0 2px, transparent 2px 5px); z-index: 9; }
+#sq-root .sq-wait-done { opacity: 0.45; }
+#sq-root .sq-wait-chip { flex-shrink: 0; padding: 0 4px; border: 1px solid #fcd34d; border-radius: 3px; background: #fffbeb; color: #b45309; font-size: 10px; font-weight: bold; line-height: 14px; white-space: nowrap; }
+
+
+/* The stage timeline on the issue page (#sq-stage-timeline): the same colors and looks as the bars of the
+   project's timeline (the state rules above are shared with it), but a taller box with the stage name, the days and
+   the date callouts. The mark (check, arrow, warning) is written in the page next to the name, so the bars' own
+   ::before is turned off here; the bars' single-line height is undone. */
+#sq-stage-timeline .stage-drag-seg { line-height: 1.35; text-align: left; overflow: visible; }
+#sq-stage-timeline .stage-drag-seg::before { content: none; }
+#sq-stage-timeline .sq-stage-badge { background: rgba(255,255,255,0.88); color: #334155; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: bold; text-shadow: none; white-space: nowrap; }
+#sq-stage-timeline .sq-bar-delayed .sq-stage-badge { color: #b91c1c; }
+#sq-stage-timeline .sq-stage-days { font-size: 10px; color: inherit; opacity: 0.85; }
+
+/* "Adjust the schedule" on the issue page: moved out of the page */
+#sq-stage-timeline .stage-drag-handle { touch-action: none; }
+#sq-stage-timeline .stage-drag-handle:hover .stage-drag-grip, #sq-stage-timeline .stage-drag-handle:active .stage-drag-grip { background: #fde68a; }
+/* the handles, the editable day boxes and the "count non-working days" boxes only show up while adjusting */
+#stage-pipeline-bar.stage-pipeline-editing .stage-drag-handle { display: flex !important; }
+#stage-pipeline-bar.stage-pipeline-editing .stage-duration-static { display: none !important; }
+#stage-pipeline-bar.stage-pipeline-editing .stage-duration-edit { display: inline-flex !important; }
+#stage-pipeline-bar.stage-pipeline-editing .stage-all-days-edit { display: block !important; }
+/* the mode switch: the selected one in blue (from the radio itself, not from a script) */
+#stage-mode-switch label { padding: 2px 10px; font-size: 11px; cursor: pointer; color: #334155; }
+#stage-mode-switch label + label { border-left: 1px solid #cbd5e1; }
+#stage-mode-switch label:has(input:checked) { background: #2563eb; color: #fff; }
+#stage-mode-switch input { margin-right: 4px; }
+/* the button that opens adjusting shows that it is open */
+#sq-stage-timeline .sq-adjust-toggle[aria-expanded="true"] { background: #2563eb !important; color: #fff !important; border-color: #1d4ed8 !important; }
+/* the start date box: a callout whose tip points up at the left end of the bar */
+.sq-start-bubble { position: relative; padding: 3px 8px; margin-top: 4px; background: #eff6ff; border: 1px solid #93c5fd; border-radius: 4px; }
+.sq-start-bubble::before, .sq-start-bubble::after { content: ''; position: absolute; left: 6px; border: 6px solid transparent; border-top: 0; }
+.sq-start-bubble::before { top: -7px; border-bottom: 7px solid #93c5fd; }
+.sq-start-bubble::after { top: -6px; border-bottom: 7px solid #eff6ff; }
+.sq-start-bubble.sq-start-locked { background: #f1f5f9; border-color: #cbd5e1; color: #475569 !important; cursor: not-allowed; }
+.sq-start-bubble.sq-start-locked::before { border-bottom-color: #cbd5e1; }
+.sq-start-bubble.sq-start-locked::after { border-bottom-color: #f1f5f9; }
+/* save: blue; not pressable while the plan does not fit, and the reason next to it */
+#sq-stage-timeline .sq-stage-save { padding: 4px 14px; font-size: 11px; border: none; background: #2563eb; color: #fff; border-radius: 4px; font-weight: bold; cursor: pointer; }
+#sq-stage-timeline .sq-stage-save:disabled { background: #94a3b8; cursor: not-allowed; }
+#sq-stage-timeline .sq-cannot-fit { align-self: center; font-size: 11px; font-weight: bold; color: #dc2626; }
+#sq-stage-timeline .sq-cannot-fit[hidden] { display: none; }
+
+/* Touch, keyboard and screen readers (2026-11-14): bigger day boxes without the spinner, the reason of a grayed-out start
+   date on screen, visible focus */
+#sq-stage-timeline .stage-duration-input { width: 3.2em; padding: 2px 4px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 3px; text-align: right; -moz-appearance: textfield; appearance: textfield; }
+#sq-stage-timeline .stage-duration-input::-webkit-outer-spin-button, #sq-stage-timeline .stage-duration-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+#sq-stage-timeline .sq-start-why { font-size: 10px; color: #475569; white-space: nowrap; }
+#sq-stage-timeline input:focus-visible, #sq-stage-timeline button:focus-visible, #stage-mode-switch label:has(input:focus-visible),
+#sq-root .sq-adjust-modes label:has(input:focus-visible), .sq-adjust-btn:focus-visible, .sq-mode-btn:focus-visible { outline: 2px solid #f59e0b; outline-offset: 1px; }

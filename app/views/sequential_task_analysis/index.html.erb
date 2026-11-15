@@ -1,0 +1,56 @@
+<% content_for :header_tags do %>
+  <%= stylesheet_link_tag 'sequential_tasks', plugin: 'redmine_sequential_tasks' %>
+<% end %>
+<%
+  analysis_path = lambda { |overrides = {}| project_sequential_task_analysis_path(@project, { tracker_id: @tracker_filter, days: @days }.merge(overrides)) }
+  days_text = lambda { |days| days ? l('sequential_tasks.analysis.period_days', count: days) : l('sequential_tasks.analysis.period_all') }
+  number = lambda { |value| value.nil? ? '–' : (value == value.to_i ? value.to_i.to_s : value.round(1).to_s) }
+%>
+<div class="sq-top">
+  <h2><%= RedmineSequentialTasks::TabLabel.text %></h2>
+  <%= sq_view_switch(@project, 'analysis') %>
+  <%= sq_dropdown(l('sequential_tasks.toolbar.tracker_filter'), 'tracker',
+                  [[l(:label_all), analysis_path.call(tracker_id: nil), @tracker_filter.blank?]] +
+                  @enabled_trackers.map { |t| [t.name, analysis_path.call(tracker_id: t.id), @tracker_filter == t.id] }) %>
+  <%= sq_dropdown(l('sequential_tasks.analysis.period'), 'period',
+                  ([nil] + SequentialTaskAnalysisController::PERIODS).map { |d| [days_text.call(d), analysis_path.call(days: d), @days == d] }) %>
+</div>
+
+<div id="sq-root" class="sq-analysis">
+<% if @tables.empty? %>
+  <p class="nodata"><%= l(:label_no_data) %></p>
+<% end %>
+<% @tables.each do |table| %>
+  <h3>🏷️ <%= table[:tracker].name %></h3>
+  <table class="sq-an">
+    <thead>
+      <tr>
+        <th><%= l('sequential_tasks.analysis.stage') %></th>
+        <th><%= l('sequential_tasks.analysis.count') %></th>
+        <th><%= l('sequential_tasks.analysis.mean') %></th>
+        <th><%= l('sequential_tasks.analysis.median') %></th>
+        <th><%= l('sequential_tasks.analysis.standard') %></th>
+        <th><%= l('sequential_tasks.analysis.overrun') %></th>
+        <th><%= l('sequential_tasks.analysis.now') %></th>
+        <th><%= l('sequential_tasks.analysis.slow') %></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% table[:stages].each do |stage| %>
+        <% summary = stage[:summary] %>
+        <tr class="sq-an-row<%= ' sq-an-bottleneck' if table[:bottleneck] == stage[:step].id %>" data-status="<%= stage[:step].status_id %>">
+          <td class="sq-an-stage"><%= '🚧 ' if table[:bottleneck] == stage[:step].id %><%= stage[:step].status&.name %></td>
+          <td class="sq-an-count"><%= summary[:count] %></td>
+          <td class="sq-an-mean"><%= stage[:enough] ? format('%.1f', summary[:mean]) : '–' %></td>
+          <td class="sq-an-median"><%= stage[:enough] ? number.call(summary[:median]) : '–' %></td>
+          <td class="sq-an-standard"><%= stage[:standard] %></td>
+          <td class="sq-an-overrun"><%= stage[:enough] && summary[:overrun_rate] ? "#{(summary[:overrun_rate] * 100).round}%" : '–' %></td>
+          <td class="sq-an-now"><%= stage[:now] %></td>
+          <td class="sq-an-slow"><%= stage[:slow] %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>
+<p class="sq-an-note"><%= l('sequential_tasks.analysis.note', min: RedmineSequentialTasks::StageStats::MIN_SAMPLES) %></p>
+</div>

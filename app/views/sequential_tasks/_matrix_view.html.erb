@@ -1,0 +1,120 @@
+<%
+  status_col_width = 85
+  step_col_width = 170
+
+  # Texts used inside the per-row loops are formed once: a screen can have hundreds of rows
+  range_tpl = l('sequential_tasks.table.range', from: '%s', to: '%s')
+  txt = {
+    in_progress: l('sequential_tasks.state.in_progress'),
+    skipped: l('sequential_tasks.state.skipped'),
+    planned: l('sequential_tasks.state.planned'),
+    undecided: l('sequential_tasks.table.undecided')
+  }
+  ctx = sq_row_context
+  css_text = lambda { |text| text.gsub(/["\\]/) { |c| "\\#{c}" } }
+%>
+<style>
+  #sq-root .sq-rp::before { content: "<%= raw css_text.call(l('sequential_tasks.table.planned_label')) %>"; }
+  #sq-root .sq-ra::before { content: "<%= raw css_text.call(l('sequential_tasks.table.actual_label')) %>"; }
+</style>
+
+<div class="sequential-matrix-container sq-scroller" style="margin-top: 15px;">
+  <% @matrix_issues_by_tracker.each do |tracker, issues_with_level| %>
+    <% steps = @tracker_steps[tracker.id] || [] %>
+    <% standard_days = RedmineSequentialTasks::StandardDays.new(@project.id) %>
+    <% next if issues_with_level.empty? && @tracker_filter.blank? %>
+    <% total_table_width = status_col_width + (steps.size * step_col_width) %>
+
+    <div class="tracker-matrix-section" style="margin-bottom: 25px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: clip; display: block; width: fit-content; min-width: min-content; max-width: 100%;">
+      <div style="background: #f8fafc; border-bottom: 1.5px solid #cbd5e1; padding: 8px 14px; display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 14px; font-weight: bold; color: #1e293b;">
+            🏷️ <%= l('sequential_tasks.table.group_tracker', name: tracker.name) %>
+          </span>
+          <span style="font-size: 11px; background: #e2e8f0; color: #475569; padding: 1px 7px; border-radius: 10px; font-weight: 600;">
+            <%= l('sequential_tasks.table.issues_count', count: issues_with_level.size) %>
+          </span>
+          <span style="font-size: 11px; color: #64748b;">
+            <%= l('sequential_tasks.table.stages_count', count: steps.size) %>
+          </span>
+        </div>
+      </div>
+
+      <div>
+        <table class="matrix-table sq-mx" style="width: calc(var(--sq-issue-w) + <%= total_table_width %>px);">
+          <colgroup>
+            <col style="width: var(--sq-issue-w)"><col style="width: <%= status_col_width %>px"><col span="<%= steps.size %>" style="width: <%= step_col_width %>px">
+          </colgroup>
+          <thead>
+            <tr style="background: #f8fafc; height: 42px;">
+              <th class="sq-th-issue"><span class="sq-thw"><span><%= l('sequential_tasks.table.issue_assignee') %></span><% if @can_reorder %><button type="button" class="sq-mode-btn" aria-pressed="false" title="<%= l('sequential_tasks.toolbar.reorder_mode_title') %>">↕ <%= l('sequential_tasks.toolbar.reorder_mode') %></button><% end %></span><span class="sq-rz"></span></th>
+              <th class="sq-th-state"><%= l('sequential_tasks.table.state') %></th>
+              <% steps.each do |st| %>
+                <% color = st.color.presence || '#3b82f6' %>
+                <th class="sq-th-step" style="padding: 4px 8px; text-align: center; border-bottom: 2px solid #cbd5e1; border-right: 1px solid #e2e8f0; vertical-align: middle; box-sizing: border-box; background: #f8fafc;">
+                  <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                      <span style="display: inline-block; width: 16px; height: 16px; line-height: 16px; border-radius: 50%; background: <%= color %>; color: #ffffff; font-size: 10px; font-weight: bold;"><%= st.position %></span>
+                      <span style="font-weight: bold; color: #1e293b; font-size: 11px;"><%= st.status.name %></span>
+                    </div>
+                    <span style="font-size: 10px; color: #64748b;"><%= l('sequential_tasks.table.standard_days', days: standard_days.days(tracker.id, st)) %></span>
+                  </div>
+                </th>
+              <% end %>
+            </tr>
+          </thead>
+          <tbody>
+            <% if issues_with_level.empty? %>
+              <tr>
+                <td colspan="<%= 2 + steps.size %>" style="text-align: center; padding: 25px; color: #94a3b8;">
+                  <%= l('sequential_tasks.empty.matrix_no_issues') %>
+                </td>
+              </tr>
+            <% end %>
+<% issues_with_level.each do |issue, level|
+     stages = @stages_by_issue[issue.id] || []
+     stages_by_status = stages.index_by(&:status_id)
+     summary = @summaries[issue.id]
+     is_behind = summary.delayed?
+     parent_id = @seq_issues[issue.id]&.branched_from_issue_id
+     branch_count = @branch_counts[issue.id].to_i
+%><tr class="issue-row matrix-row sq-row"<%= raw ' data-delayed="true"' if is_behind %><%= raw %( data-bc="#{branch_count}") if branch_count > 0 %><%= raw %( data-id="#{issue.id}" data-p="#{parent_id}") %>>
+<%= sq_issue_cell(issue, summary, level, parent_id, ctx, indent: 16, oos_chip: false, release: @release[issue.id], branch: @branch_progress[issue.id], slow: @slowness[issue.id]) %>
+<%= sq_state_cell(issue, summary, ctx, oos_note: true) %>
+<% steps.each do |st|
+     stage = stages_by_status[st.status_id]
+     unless stage %><td class="sq-cell sq-cs-none">—</td>
+<%     next
+     end
+     p_start = stage.planned_start_date
+     p_end = stage.planned_end_date
+     not_started = summary.not_started_stage?(stage) # before the start date: planned, no actual start
+     a_start = not_started ? nil : RedmineSequentialTasks::UserTime.date_of(stage.actual_start_at)
+     a_end = RedmineSequentialTasks::UserTime.date_of(stage.actual_end_at)
+     case (not_started ? 'pending' : stage.stage_status)
+     when 'skipped'
+       cs = 'skip'; cb = 'skip'; cb_text = txt[:skipped]
+     when 'completed'
+       diff = (a_end && p_end) ? (a_end - p_end).to_i : 0
+       cs = diff > 0 ? 'late' : 'done'; cb = cs
+       cb_text = l('sequential_tasks.state.done_diff', diff: diff > 0 ? "+#{diff}d" : "#{diff}d")
+     when 'in_progress'
+       st_delay = (p_end && @today > p_end) ? (@today - p_end).to_i : 0
+       if st_delay > 0
+         cs = 'delay'; cb = 'delay'; cb_text = ctx.delayed_tpl % st_delay
+       else
+         cs = 'prog'; cb = 'prog'; cb_text = txt[:in_progress]
+       end
+     else
+       cs = 'pend'; cb = 'pend'; cb_text = txt[:planned]
+     end
+     planned = range_tpl % [p_start ? p_start.strftime('%m/%d') : txt[:undecided], p_end ? p_end.strftime('%m/%d') : txt[:undecided]]
+%><td class="sq-cell sq-cs-<%= cs %>"><div class="sq-r sq-rp"><%= planned %></div><% if a_start && a_end %><div class="sq-r sq-ra"><%= range_tpl % [a_start.strftime('%m/%d'), a_end.strftime('%m/%d')] %></div><% elsif a_start %><div class="sq-r sq-ra"><%= raw range_tpl % [a_start.strftime('%m/%d'), %(<span class="sq-ip">#{h(txt[:in_progress])}</span>)] %></div><% else %><div class="sq-r sq-ra sq-empty">—</div><% end %><span class="sq-cb sq-cb-<%= cb %>"><%= cb_text %></span></td>
+<% end %></tr>
+<% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  <% end %>
+</div>

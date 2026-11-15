@@ -1,0 +1,68 @@
+<%= stylesheet_link_tag 'sequential_tasks', plugin: 'redmine_sequential_tasks' %>
+<style>
+  #sq-root .sq-net { position: relative; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; overflow: hidden; }
+  #sq-root .sq-net-head { display: flex; border-bottom: 1px solid #cbd5e1; background: #f8fafc; font-size: 11px; color: #475569; }
+  #sq-root .sq-net-head span { flex: 1 1 0; text-align: center; border-left: 1px solid #e2e8f0; padding: 3px 0; overflow: hidden; white-space: nowrap; }
+  #sq-root .sq-net-head span.sq-net-today { background: #dbeafe; font-weight: bold; }
+  #sq-root .sq-net-lane { position: relative; height: 34px; border-bottom: 1px solid #f1f5f9; }
+  #sq-root .sq-net-grid { position: relative; background-image: linear-gradient(to right, #eef2f7 1px, transparent 1px); }
+  #sq-root a.sq-net-bar { text-decoration: none; padding: 0 16px 0 8px; display: flex; align-items: center; justify-content: center; line-height: 1.2; font-size: 12px; white-space: normal; clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%); }
+  #sq-root .sq-net-edges { position: absolute; left: 0; top: 0; width: 100%; pointer-events: none; z-index: 5; }
+</style>
+<h2><%= l('sequential_tasks.network.title') %> <small style="font-size: 12px; color: #b45309;">(<%= l('sequential_tasks.network.prototype') %>)</small></h2>
+
+<%= form_tag(project_sequential_task_network_path(@project), method: :get) do %>
+  <p>
+    <label for="issue_id"><%= l('sequential_tasks.network.issue_id') %></label>
+    <%= text_field_tag 'issue_id', params[:issue_id], size: 8 %>
+    <%= select_tag 'zoom', options_for_select([[l('sequential_tasks.toolbar.zoom_week'), 'weeks'], [l('sequential_tasks.toolbar.zoom_day'), 'days'], [l('sequential_tasks.toolbar.zoom_month'), 'months']], @zoom) %>
+    <%= submit_tag l('sequential_tasks.network.show'), name: nil %>
+  </p>
+<% end %>
+<p class="info"><%= l('sequential_tasks.network.help') %></p>
+
+<% if params[:issue_id].present? && @seed.nil? %>
+  <p class="nodata"><%= l('sequential_tasks.network.not_found') %></p>
+<% elsif @seed %>
+  <% width = @slots.size %>
+  <div id="sq-root" class="sq-style-<%= @bar_style %>">
+    <div class="sq-net">
+      <div class="sq-net-head">
+        <% @slots.each do |slot| %><span class="<%= 'sq-net-today' if slot[:is_today] %>" title="<%= slot[:start_date] %>"><%= slot[:label] %></span><% end %>
+      </div>
+      <% lane_h = 44 %>
+      <% lane_count = [@placed.values.map { |p| p[:lane] + p[:span] }.max || 1, 1].max %>
+      <% height = lane_count * lane_h %>
+      <% bars = {} %>
+      <div class="sq-net-grid" style="height: <%= height %>px; background-size: <%= (100.0 / width).round(4) %>% 100%;">
+        <% @issues.each do |issue| %>
+          <% place = @placed[issue.id] %>
+          <% left, right = RedmineSequentialTasks::TimelineSlots.span(@slots, issue.start_date, issue.due_date) %>
+          <% next unless left %>
+          <% bars[issue.id] = { left: left, right: right, lane: place[:lane], span: place[:span] } %>
+          <% kind = { done: 'done', delayed: 'delayed', current: 'cur', future: 'future' }.fetch(@states[issue.id]) %>
+          <a class="sq-bar sq-bar-<%= kind %> sq-net-bar" href="<%= issue_path(issue) %>" target="_top"
+             data-lane="<%= place[:lane] %>" data-span="<%= place[:span] %>"
+             style="left: <%= (left * 100).round(3) %>%; width: <%= ((right - left) * 100).round(3) %>%; top: <%= place[:lane] * lane_h + 5 %>px; height: <%= place[:span] * lane_h - 10 %>px; --c: #2b6a8a;"
+             title="#<%= issue.id %> <%= issue.subject %> (<%= issue.start_date %> - <%= issue.due_date %>)">#<%= issue.id %> <%= issue.subject %></a>
+        <% end %>
+        <svg class="sq-net-edges" height="<%= height %>">
+          <% @edges.each do |from, to| %>
+            <% a = bars[from]; b = bars[to]; next unless a && b %>
+            <%# next to each other on one lane (no other bar between them): the arrow shape says it %>
+            <% next if a[:lane] == b[:lane] && bars.values.none? { |o| !o.equal?(a) && !o.equal?(b) && o[:lane] == a[:lane] && o[:left] >= a[:right] && o[:left] < b[:left] } %>
+            <% next if b[:lane] <= a[:lane] && a[:lane] < b[:lane] + b[:span] && a[:right] <= b[:left] + 0.05 %> <%# a thick bar that stands right behind it: the shape says it %>
+            <line x1="<%= (a[:right] * 100).round(3) %>%" y1="<%= a[:lane] * lane_h + a[:span] * lane_h / 2 %>" x2="<%= (b[:left] * 100).round(3) %>%" y2="<%= b[:lane] * lane_h + b[:span] * lane_h / 2 %>" stroke="#94a3b8" stroke-width="1" stroke-opacity="0.7" stroke-dasharray="3 2" />
+          <% end %>
+        </svg>
+      </div>
+      </div>
+    </div>
+  </div>
+  <% if @undated.any? %>
+    <p class="info"><%= l('sequential_tasks.network.undated', ids: @undated.map { |i| "##{i.id}" }.join(', ')) %></p>
+  <% end %>
+  <% if @truncated %>
+    <p class="info"><%= l('sequential_tasks.network.truncated', count: SequentialTaskNetworksController::MAX_ISSUES) %></p>
+  <% end %>
+<% end %>

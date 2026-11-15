@@ -1,0 +1,61 @@
+<div class="box tabular">
+  <p>
+    <%= l('sequential_tasks.settings.plugin_intro') %>
+  </p>
+  <p>
+    <%= link_to "⚙️ #{l('sequential_tasks.settings.plugin_link')}", sequential_task_settings_path, class: 'icon icon-settings' %>
+  </p>
+  <p>
+    <label for="settings_tab_label"><%= l('sequential_tasks.settings.tab_label') %></label>
+    <%= text_field_tag 'settings[tab_label]', settings['tab_label'], id: 'settings_tab_label', size: 30,
+                       maxlength: RedmineSequentialTasks::TabLabel::MAX_LENGTH, placeholder: l('sequential_tasks.menu.project') %>
+    <em class="info"><%= l('sequential_tasks.settings.tab_label_help') %></em>
+  </p>
+  <p>
+    <label for="settings_name_order"><%= l('sequential_tasks.settings.name_order') %></label>
+    <%= select_tag 'settings[name_order]',
+                   options_for_select([[l('sequential_tasks.settings.name_order_redmine'), 'redmine'],
+                                       [l('sequential_tasks.settings.name_order_first_last'), 'first_last'],
+                                       [l('sequential_tasks.settings.name_order_last_first'), 'last_first']],
+                                      settings['name_order'].presence || 'redmine'),
+                   id: 'settings_name_order' %>
+    <em class="info"><%= l('sequential_tasks.settings.name_order_help') %></em>
+  </p>
+  <%# The trackers whose issues are shown as milestones: the same two lists as the columns of an issue query
+      (Redmine's moveOptions): candidates on the left, chosen ones on the right. The right list is what is saved; its
+      options are selected from the start and again on submit. %>
+  <% chosen_ids = Array(settings['milestone_tracker_ids']).map(&:to_i) %>
+  <% trackers = Tracker.sorted.to_a %>
+  <p>
+    <label for="available_milestone_trackers"><%= l('sequential_tasks.settings.milestone_trackers') %></label>
+    <%= hidden_field_tag 'settings[milestone_tracker_ids][]', '', id: nil %>
+    <span style="display: inline-flex; align-items: center; gap: 8px; vertical-align: top;">
+    <span class="query-columns">
+      <%= label_tag 'available_milestone_trackers', l('sequential_tasks.settings.milestone_available'), style: 'float: none; width: auto; font-weight: normal;' %><br />
+      <%= select_tag 'available_milestone_trackers',
+                     options_for_select(trackers.reject { |t| chosen_ids.include?(t.id) }.map { |t| [t.name, t.id] }),
+                     multiple: true, size: 8, id: 'available_milestone_trackers',
+                     ondblclick: "moveOptions(this.form.available_milestone_trackers, this.form.settings_milestone_tracker_ids);" %>
+    </span>
+    <span class="buttons">
+      <button type="button" class="move-right" title="<%= l('sequential_tasks.settings.milestone_add') %>" onclick="moveOptions(this.form.available_milestone_trackers, this.form.settings_milestone_tracker_ids);"><%= sprite_icon('arrow-narrow-right', rtl: true) %></button>
+      <button type="button" class="move-left" title="<%= l('sequential_tasks.settings.milestone_remove') %>" onclick="moveOptions(this.form.settings_milestone_tracker_ids, this.form.available_milestone_trackers);"><%= sprite_icon('arrow-narrow-left', rtl: true) %></button>
+    </span>
+    <span class="query-columns">
+      <%= label_tag 'settings_milestone_tracker_ids', l('sequential_tasks.settings.milestone_chosen'), style: 'float: none; width: auto; font-weight: normal;' %><br />
+      <%= select_tag 'settings[milestone_tracker_ids]',
+                     options_for_select(trackers.select { |t| chosen_ids.include?(t.id) }.map { |t| [t.name, t.id] }, chosen_ids),
+                     multiple: true, size: 8, id: 'settings_milestone_tracker_ids',
+                     ondblclick: "moveOptions(this.form.settings_milestone_tracker_ids, this.form.available_milestone_trackers);" %>
+    </span>
+    </span>
+    <%= javascript_tag do %>
+      $(document).ready(function () {
+        $('#settings_milestone_tracker_ids').closest('form').submit(function () {
+          $('#settings_milestone_tracker_ids option:not(:disabled)').prop('selected', true);
+        });
+      });
+    <% end %>
+    <em class="info"><%= l('sequential_tasks.settings.milestone_trackers_help') %></em>
+  </p>
+</div>

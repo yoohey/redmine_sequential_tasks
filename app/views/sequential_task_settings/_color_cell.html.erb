@@ -1,0 +1,8 @@
+<td style="text-align: center; padding: 6px 12px;">
+  <span class="sq-swatches" style="display: inline-grid; grid-template-columns: repeat(6, 18px); gap: 4px; vertical-align: middle;">
+    <% SequentialTaskStep::PALETTE.each do |c| %>
+      <button type="button" class="sq-swatch" data-color="<%= c %>" <%= 'disabled' if local_assigns[:disabled] %> title="<%= c %>" aria-label="<%= c %>" style="width: 18px; height: 18px; padding: 0; border-radius: 3px; border: 2px solid <%= c.casecmp?(color) ? '#0f172a' : 'transparent' %>; background: <%= c %>; cursor: pointer;"></button>
+    <% end %>
+  </span>
+  <input type="color" <%= 'disabled' if local_assigns[:disabled] %> name="steps[][color]" value="<%= color %>" title="<%= l('sequential_tasks.settings.custom_color') %>" style="width: 32px; height: 22px; border: none; padding: 0; background: none; cursor: pointer; vertical-align: middle;">
+</td>

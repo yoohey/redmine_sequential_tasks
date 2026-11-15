@@ -1,0 +1,43 @@
+<%# Standard days of the stages for this project. Empty = the days of the tracker. %>
+<% standard = RedmineSequentialTasks::StandardDays.new(@project.id) %>
+<% settings = SequentialTaskSetting.where(tracker_id: @project.tracker_ids, enabled: true).includes(steps: :status).to_a %>
+<%= stylesheet_link_tag 'sequential_tasks', plugin: 'redmine_sequential_tasks' %>
+<p class="info"><%= l('sequential_tasks.project_settings.help') %></p>
+<% if settings.empty? %>
+  <p class="nodata"><%= l('sequential_tasks.project_settings.no_trackers') %></p>
+<% else %>
+  <%= form_tag(project_sequential_task_project_steps_path(@project), method: :put) do %>
+    <% Tracker.where(id: settings.map(&:tracker_id)).sorted.each do |tracker| %>
+      <% setting = settings.find { |s| s.tracker_id == tracker.id } %>
+      <h3><%= tracker.name %></h3>
+      <div id="sq-root"><table class="list" style="width: auto; min-width: 420px;">
+        <thead>
+          <tr>
+            <th style="text-align: left;"><%= l('sequential_tasks.settings.col_status') %></th>
+            <th><%= l('sequential_tasks.project_settings.tracker_days') %></th>
+            <th><%= l('sequential_tasks.project_settings.project_days') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% setting.steps.sort_by(&:position).each do |step| %>
+            <tr>
+              <%# The stage as a bar of the timeline, in its color and the look of its tracker (set by an administrator) %>
+              <% color = step.color.to_s.match?(SequentialTaskStep::COLOR_FORMAT) ? step.color : SequentialTaskStep::DEFAULT_COLOR %>
+              <td class="sq-style-<%= setting.bar_style %>" style="text-align: left;">
+                <div class="sq-bar sq-bar-cur" style="--c:<%= color %>; position: static; display: inline-block; width: auto; padding: 0 10px;"><%= step.status&.name %></div>
+              </td>
+              <td><%= step.default_duration_days %></td>
+              <td>
+                <input type="number" name="days[<%= tracker.id %>][<%= step.status_id %>]" min="<%= step.position == setting.steps.map(&:position).min ? 0 : 1 %>" max="365" size="4" style="width: 70px; text-align: right;"
+                       value="<%= standard.days(tracker.id, step) if standard.overridden?(tracker.id, step.status_id) %>"
+                       placeholder="<%= step.default_duration_days %>">
+                <%= l('sequential_tasks.settings.days_unit') %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table></div>
+    <% end %>
+    <p><%= submit_tag l(:button_save) %></p>
+  <% end %>
+<% end %>

@@ -1,0 +1,266 @@
+<%
+  slot_width = RedmineSequentialTasks::TimelineSlots::SLOT_WIDTH.fetch(@zoom)
+  total_timeline_width = @slots.size * slot_width
+  # the width of the issue column is a CSS variable (--sq-issue-w, set by the user by dragging the header edge)
+  status_col_width = 85
+  timeline_start = @slots.first ? @slots.first[:start_date] : @today
+  timeline_end = @slots.last ? @slots.last[:end_date] : @today
+  total_timeline_days = [(timeline_end - timeline_start).to_i + 1, 1].max
+
+  # Links keep the zoom, grouping, tracker filter and the two display switches
+  list_params = { zoom: @zoom, group_by: @group_by, tracker_id: @tracker_filter, version_id: @version_filter, category_id: @category_filter, stage: @stage_filter, state: @state_filter, sort: (@sort == 'manual' ? nil : @sort),
+                  show_closed: (@show_closed ? '1' : '0'), show_pending: (@show_pending ? '1' : '0') }
+  list_path = lambda { |overrides = {}| project_sequential_tasks_path(@project, list_params.merge(view: @view).merge(overrides)) }
+
+  # The background grid (weekend shading, today, one line per slot) is one CSS background shared by all rows
+  # Positions in the grid are percentages of the width of the dates, not pixels: the browser may make the table a
+  # fraction of a pixel wider than the sum of the columns and spreads that over the date columns; percentages
+  # follow it, so the lines stay under the lines of the header
+  pct = ->(px) { (px.to_f / total_timeline_width * 100).round(5) }
+  fill_stops = []
+  line_stops = []
+  today_line = 'none'
+  line_colors = { strong: ['#64748b', 2], medium: ['#cbd5e1', 1], nil => ['#f1f5f9', 1] }
+  @slots.each_with_index do |slot, i|
+    x0 = i * slot_width
+    x1 = x0 + slot_width
+    color, width = line_colors[slot[:boundary]]
+    line_stops << "transparent #{pct.call(x0)}% calc(#{pct.call(x1)}% - #{width}px), #{color} calc(#{pct.call(x1)}% - #{width}px) #{pct.call(x1)}%"
+    fill = slot[:is_today] ? 'rgba(59, 130, 246, 0.05)' : (slot[:is_weekend] ? '#f8fafc' : 'transparent')
+    fill_stops << "#{fill} #{pct.call(x0)}% #{pct.call(x1)}%"
+    if slot[:is_today]
+      today_line = "linear-gradient(to right, transparent 0 calc(#{pct.call(x1)}% - 1px), #bfdbfe calc(#{pct.call(x1)}% - 1px) #{pct.call(x1)}%, transparent #{pct.call(x1)}%)"
+    end
+  end
+  # Header tiers (no week numbers), outermost first: [[label, colspan, slot or nil], ...] per row. The last row has one cell per slot.
+  chunk = lambda do |slots, key, label|
+    slots.slice_when { |x, y| key.call(x) != key.call(y) }.map { |g| [label.call(g.first), g.size, nil] }
+  end
+  tier_rows = case @zoom
+              when 'days'
+                [chunk.call(@slots, ->(sl) { sl[:start_date].strftime('%Y-%m') }, ->(sl) { sl[:start_date].strftime('%Y/%m') }),
+                 @slots.map { |sl| [sl[:start_date].day, 1, sl] }]
+              when 'weeks'
+                [chunk.call(@slots, ->(sl) { (sl[:start_date] + 3).strftime('%Y-%m') }, ->(sl) { (sl[:start_date] + 3).strftime('%Y/%m') }),
+                 @slots.map { |sl| [sl[:label], 1, sl] }]
+              else
+                [chunk.call(@slots, ->(sl) { sl[:start_date].year }, ->(sl) { sl[:start_date].year }),
+                 @slots.map { |sl| [sl[:sub_label], 1, sl] }]
+              end
+  lanes = @band[:lanes]
+  ms_row_height = 26 # px; the milestone row and the lanes of the band are fixed rows under the tiers (see the stylesheet)
+  lane_height = 22
+  header_rows = tier_rows.size + (@milestones.any? ? 1 : 0) + lanes.size # the tiers, the milestone row and the lanes of the band
+  grid_background = [today_line,
+                     "linear-gradient(to right, #{line_stops.join(', ')})",
+                     "linear-gradient(to right, #{fill_stops.join(', ')})"].join(', ')
+
+  # Texts used inside the per-row loops are formed once: a screen can have hundreds of rows
+  range_tpl = l('sequential_tasks.table.range', from: '%s', to: '%s')
+  txt = {
+    title_delayed: l('sequential_tasks.state.title_delayed'),
+    title_done: l('sequential_tasks.state.title_done'),
+    title_skipped: l('sequential_tasks.state.title_skipped')
+  }
+  default_palette = %w[#3b82f6 #f59e0b #10b981 #8b5cf6 #ec4899 #06b6d4]
+  ctx = sq_row_context
+  # where a release date is over the dates, in percent (one lookup per date, not per row)
+  release_fraction = Hash.new { |memo, date| position = RedmineSequentialTasks::TimelineSlots.position(@slots, date); memo[date] = position && (position * 100).round(4) }
+  name_order = ctx.name_order
+%>
+
+<% content_for :header_tags do %>
+  <%= stylesheet_link_tag 'sequential_tasks', plugin: 'redmine_sequential_tasks' %>
+  <%= javascript_include_tag 'sequential_dates', 'sequential_tasks', plugin: 'redmine_sequential_tasks' %>
+<% end %>
+
+<%= render partial: 'toolbar', locals: { list_path: list_path } unless @inline %>
+
+<% if @view == 'timeline' %>
+<style>
+  #sq-root .sq-tl td.sq-track { background-repeat: no-repeat; background-image: <%= raw grid_background %>; }
+</style>
+<% end %>
+
+<%# The panel for the issue: the script makes it once, in <body>, from this template (so that a refresh of the
+    content does not touch it) %>
+<template id="sq-panel-template">
+  <aside id="sq-panel" hidden>
+    <div class="sq-panel-head">
+      <span class="sq-panel-title"></span>
+      <a class="sq-panel-open" href="#" target="_blank" rel="noopener">↗ <%= l('sequential_tasks.panel.open_page') %></a>
+      <button type="button" class="sq-panel-close" title="<%= l('sequential_tasks.panel.close') %>">×</button>
+    </div>
+    <iframe class="sq-panel-frame" title="<%= l('sequential_tasks.panel.frame_title') %>"></iframe>
+  </aside>
+</template>
+
+<div id="sq-root" class="<%= [(@view == 'timeline' ? 'sq-lightning-on' : nil), (@inline ? 'sq-inline' : nil)].compact.join(' ') %>" data-branch-url="<%= issue_sequential_task_branches_path(issue_id: '__ID__') %>" data-back-url="<%= request.fullpath %>" data-t-fold="<%= l('sequential_tasks.branch.fold_title') %>"<% if @can_adjust %> data-adjust-url="<%= issue_sequential_task_stages_path(issue_id: '__ID__') %>" data-t-adjust-failed="<%= l('sequential_tasks.adjust.failed') %>" data-t-until="<%= l('sequential_tasks.adjust.tip_until') %>" data-t-span="<%= l('sequential_tasks.adjust.tip_span') %>" data-t-due-moves="<%= l('sequential_tasks.adjust.tip_due_moves') %>" data-t-cannot-fit="<%= l('sequential_tasks.adjust.tip_cannot_fit') %>" data-t-unit-working="<%= l('sequential_tasks.issue_bar.working_days') %>" data-t-unit-all="<%= l('sequential_tasks.issue_bar.all_days_unit') %>" data-t-start-locked="<%= l('sequential_tasks.stage_form.start_locked') %>" data-t-saved="<%= l('sequential_tasks.adjust.saved') %>"<% end %><% if @can_reorder %> data-reorder-url="<%= project_sequential_task_order_path(@project) %>" data-t-drag="<%= l('sequential_tasks.reorder.drag') %>"<% if @group_by == 'version' %> data-version-url="<%= project_sequential_task_version_path(@project) %>" data-t-version-failed="<%= l('sequential_tasks.reorder.version_failed') %>"<% end %> data-t-failed="<%= l('sequential_tasks.reorder.failed') %>"<% end %>>
+<% if @issues.empty? %>
+  <p class="nodata"><%= l(:label_no_data) %><% hidden_closed = @show_closed ? 0 : @closed_total; hidden_pending = @show_pending ? 0 : @pending_total %><% if hidden_closed + hidden_pending > 0 %><%= l('sequential_tasks.empty.hidden_note', closed: hidden_closed, pending: hidden_pending) %><% end %></p>
+<% elsif @view == 'matrix' %>
+  <%= render partial: 'matrix_view' %>
+<% else %>
+  <% if @can_adjust %>
+  <%# The adjust mode's own controls: shown while the mode is on. The same two modes as the issue page %>
+  <div class="sq-adjust-bar" hidden>
+    <span class="sq-adjust-title">📅 <%= l('sequential_tasks.adjust.editing') %></span>
+    <span class="sq-adjust-modes">
+      <label title="<%= l('sequential_tasks.stage_form.mode_fixed_due_hint') %>" data-hint="<%= l('sequential_tasks.stage_form.mode_fixed_due_hint') %>"><input type="radio" name="sq-adjust-mode" value="fixed_due" checked> <%= l('sequential_tasks.stage_form.mode_fixed_due') %></label>
+      <label title="<%= l('sequential_tasks.stage_form.mode_push_hint') %>" data-hint="<%= l('sequential_tasks.stage_form.mode_push_hint') %>"><input type="radio" name="sq-adjust-mode" value="push"> <%= l('sequential_tasks.stage_form.mode_push') %></label>
+    </span>
+    <span class="sq-adjust-saves"><%= l('sequential_tasks.adjust.saves_on_release') %></span>
+    <%# the selected mode in words (not only on hover: touch and keyboard), read out when it changes %>
+    <span class="sq-adjust-hint"><span class="sq-adjust-mode-hint" aria-live="polite"><%= l('sequential_tasks.stage_form.mode_fixed_due_hint') %></span> — <%= l('sequential_tasks.adjust.hint') %></span>
+  </div>
+  <% end %>
+  <div class="sq-frame">
+    <div id="timeline-scroll-container" class="sq-scroller">
+      <div id="timeline-inner-wrapper" style="position: relative; display: inline-block; min-width: 100%;">
+        <table id="timeline-table" class="sq-tl" style="width: calc(var(--sq-issue-w) + <%= status_col_width + total_timeline_width %>px);">
+          <colgroup>
+            <col style="width: var(--sq-issue-w)"><col style="width: <%= status_col_width %>px"><col span="<%= @slots.size %>" style="width: <%= slot_width %>px">
+          </colgroup>
+          <%# A header like Redmine's Gantt, in tiers: months and days (week zoom: months and weeks; month zoom: years and months) %>
+          <thead>
+            <tr>
+              <th class="sq-th-issue" rowspan="<%= header_rows %>"><span class="sq-thw"><span><%= l('sequential_tasks.table.issue_assignee') %></span><% if @can_reorder %><button type="button" class="sq-mode-btn" aria-pressed="false" title="<%= l('sequential_tasks.toolbar.reorder_mode_title') %>">↕ <%= l('sequential_tasks.toolbar.reorder_mode') %></button><% end %><% if @can_adjust %><button type="button" class="sq-adjust-btn" aria-pressed="false" title="<%= l('sequential_tasks.adjust.mode_title') %>">📅 <%= l('sequential_tasks.adjust.mode') %></button><% end %></span><span class="sq-rz"></span></th>
+              <th class="sq-th-state" rowspan="<%= header_rows %>"><%= l('sequential_tasks.table.state') %></th>
+              <% tier_rows[0].each do |label, span| %><th class="sq-th-slot sq-t1 sq-bs" colspan="<%= span %>"><span class="sq-stick"><%= label %></span></th><% end %>
+            </tr>
+            <% tier_rows[1..].each_with_index do |cells, i| %>
+            <tr>
+              <% cells.each do |label, span, slot| %><th class="sq-th-slot sq-t<%= i + 2 %><%= ' sq-nm' unless @zoom == 'days' %><%= slot ? (slot[:boundary] == :strong ? ' sq-bs' : (slot[:boundary] == :medium ? ' sq-bw' : '')) : ' sq-bw' %><%= ' sq-today' if slot && slot[:is_today] %><%= ' sq-weekend' if slot && slot[:is_weekend] && !slot[:is_today] %>" colspan="<%= span %>"><% if slot %><span class="sq-d1"><%= label %></span><% else %><%= label %><% end %></th><% end %>
+            </tr>
+            <% end %>
+            <% if @milestones.any? %>
+            <%# The milestone row: one point per day that has a version due or a milestone issue %>
+            <tr class="sq-ms-row<%= ' sq-ms-end' if lanes.empty? %>">
+              <th class="sq-th-ms" colspan="<%= @slots.size %>" style="top: calc(<%= tier_rows.size %> * var(--sq-tier-h))"><% @milestones.each do |m| %><a class="sq-ms sq-ms-<%= m[:kind] %><%= ' sq-ms-closed' if m[:closed] %>" href="<%= m[:url] %>" style="left: <%= (m[:frac] * 100).round(4) %>%" data-f="<%= m[:frac].round(5) %>" title="<%= (m[:titles] + (m[:issue_ids].size > 1 ? [l('sequential_tasks.milestone.list_hint')] : [])).join("\n") %>"><i></i><span style="max-width: <%= m[:max_label].floor %>px"><%= m[:label] %></span></a><% end %></th>
+            </tr>
+            <% end %>
+            <%# The band: one fixed row per lane; the lanes after the second wait for the toolbar switch %>
+            <% lanes.each_with_index do |lane, i| %>
+            <tr class="sq-band-row<%= ' sq-band-extra' if i >= RedmineSequentialTasks::Band::VISIBLE_LANES %><%= ' sq-band-end' if i == [lanes.size, RedmineSequentialTasks::Band::VISIBLE_LANES].min - 1 %><%= ' sq-band-last' if i == lanes.size - 1 %>">
+              <th class="sq-th-band" colspan="<%= @slots.size %>" style="top: calc(<%= tier_rows.size %> * var(--sq-tier-h) + <%= (@milestones.any? ? ms_row_height : 0) + i * lane_height %>px)"><% lane.each do |bar| %><a class="sq-band-bar sq-band-<%= bar[:kind] %><%= ' sq-band-closed' if bar[:closed] %>" href="<%= bar[:url] %>" title="<%= bar[:title] %>" style="left: <%= (bar[:left] * 100).round(4) %>%; width: <%= (bar[:width] * 100).round(4) %>%; --p: <%= bar[:percent].to_i %>%"><span><%= bar[:label] %></span></a><% end %></th>
+            </tr>
+            <% end %>
+          </thead>
+          <tbody>
+<% @grouped_issues.each_with_index do |(group_obj, issues), g_idx| %>
+<% if @group_by != 'none' %>
+<%
+  group_title = case @group_by
+                when 'tracker' then group_obj ? l('sequential_tasks.table.group_tracker', name: group_obj.name) : l('sequential_tasks.table.group_tracker_none')
+                when 'assigned_to' then group_obj ? l('sequential_tasks.table.group_assignee', name: RedmineSequentialTasks::NameFormat.name(group_obj, name_order)) : l('sequential_tasks.table.group_assignee_none')
+                when 'status' then group_obj ? l('sequential_tasks.table.group_status', name: group_obj.name) : l('sequential_tasks.table.group_status_none')
+                when 'category' then group_obj ? l('sequential_tasks.table.group_category', name: group_obj.name) : l('sequential_tasks.table.group_category_none')
+                when 'version' then group_obj ? l('sequential_tasks.table.group_version', name: format_version_name(group_obj)) : l('sequential_tasks.table.group_version_none')
+                end
+%>
+            <tr class="group-header-row" data-group="<%= g_idx %>"<%= raw %( data-version="#{group_obj ? group_obj.id : 'none'}") if @group_by == 'version' %> title="<%= l('sequential_tasks.table.group_toggle_title') %>">
+              <th colspan="2" class="sq-gh">
+                <span id="group-icon-<%= g_idx %>" class="sq-gh-icon">▼</span>
+                <%= group_title %> <span class="sq-gh-count"><%= l('sequential_tasks.table.group_count', count: issues.size) %></span><% if @group_by == 'version' && (risk = issues.count { |i, _| (r = @release[i.id]) && r[:margin].negative? }) > 0 %> <span class="sq-gh-risk" title="<%= l('sequential_tasks.toolbar.state_release_risk') %>">⏱ <%= risk %></span><% end %>
+              </th>
+              <td colspan="<%= @slots.size %>" class="sq-gh-fill"></td>
+            </tr>
+<% end %>
+<% issues.each do |issue, level|
+     level ||= 0
+     stages = @stages_by_issue[issue.id] || []
+     summary = @summaries[issue.id]
+     is_closed = summary.closed?
+     current_stage = summary.current_stage
+     is_behind = summary.delayed?
+     parent_id = @seq_issues[issue.id]&.branched_from_issue_id
+     branch_count = @branch_counts[issue.id].to_i
+     # The adjust mode: which stages may move, the same rules as the issue page
+     adj_rescheduler = @can_adjust && !is_closed ? RedmineSequentialTasks::StageRescheduler.new(stages, current_stage) : nil
+     adj_row = adj_rescheduler&.adjustable_any?
+     adj_stages = adj_row ? stages.select { |s| adj_rescheduler.adjustable?(s) && s.planned_start_date && s.planned_end_date } : []
+     adj_row &&= adj_stages.any?
+     adj_ids = adj_stages.map(&:id)
+     adj_due = stages.reject(&:zero_day).last&.planned_end_date # the end of the last stage: the fixed due date of "due date first"
+%><tr class="issue-row sq-row sq-style-<%= @bar_styles[issue.tracker_id] || RedmineSequentialTasks::BarStyle::DEFAULT %> group-child-<%= g_idx %><%= ' is-delayed' if is_behind %>" data-progress-date="<%= summary.progress_date.strftime('%Y-%m-%d') %>"<%= raw ' data-edge="1"' if current_stage&.zero_day && !is_closed && summary.state != :pending %><%= raw %( data-bc="#{branch_count}") if branch_count > 0 %><%= raw %( data-id="#{issue.id}" data-p="#{parent_id}") %><%= raw %( data-adj="#{adj_stages.map { |s| "#{s.id}:#{s.planned_start_date.strftime('%Y-%m-%d')}:#{s.planned_end_date.strftime('%Y-%m-%d')}:#{s.all_days? ? 1 : 0}" }.join(',')}" data-due="#{adj_due&.strftime('%Y-%m-%d')}"#{' data-start-ok="1"' if adj_rescheduler.start_changeable?}) if adj_row %>>
+<%= sq_issue_cell(issue, summary, level, parent_id, ctx, indent: 18, oos_chip: true, release: @release[issue.id], branch: @branch_progress[issue.id], slow: @slowness[issue.id], wait: (current_stage&.zero_day && !is_closed && current_stage.actual_start_at ? (@today - current_stage.actual_start_at.to_date).to_i : nil)) %>
+<%= sq_state_cell(issue, summary, ctx, oos_note: false) %>
+<td class="sq-track" colspan="<%= @slots.size %>"><% if (rel = @release[issue.id]) && (rel_frac = release_fraction[rel[:date]]) %><i class="sq-rel sq-rel-<%= rel[:margin].negative? ? 'late' : 'ok' %>" style="left: <%= rel_frac %>%" title="<%= (rel[:margin].negative? ? ctx.release_late_tpl : ctx.release_ok_tpl) % [rel[:name], rel[:date].strftime('%Y/%m/%d'), rel[:margin].abs] %>"></i><% end %><% stages.each do |stage|
+     if stage.zero_day # a wait for somebody to pick the issue up: no bar, the time spent in it as a hatched strip
+       w_from = stage.actual_start_at&.to_date
+       if w_from
+         w_to = stage.actual_end_at ? stage.actual_end_at.to_date : @today
+         if w_to >= timeline_start && w_from <= timeline_end
+           w_from = [w_from, timeline_start].max
+           w_to = [w_to, timeline_end].min
+           w_left = ((w_from - timeline_start).to_f / total_timeline_days * total_timeline_width).round(1)
+           w_width = [(((w_to - w_from).to_f + 1) / total_timeline_days * total_timeline_width).round(1) - 2, 4].max
+           concat %(<div class="sq-wait#{' sq-wait-done' unless stage == current_stage}" style="left:#{w_left}px;width:#{w_width}px" title="#{h(l('sequential_tasks.zero_day.title', days: (w_to - w_from).to_i))}"></div>).html_safe
+         end
+       end
+       next
+     end
+     next unless stage.planned_start_date && stage.planned_end_date
+     next if stage.planned_end_date < timeline_start || stage.planned_start_date > timeline_end
+     o_start = [stage.planned_start_date, timeline_start].max
+     o_end = [stage.planned_end_date, timeline_end].min
+     left_px = ((o_start - timeline_start).to_f / total_timeline_days * total_timeline_width).round(1)
+     width_px = [(((o_end - o_start).to_f + 1) / total_timeline_days * total_timeline_width).round(1) - 2, 8].max
+     is_skipped = stage.stage_status == 'skipped'
+     is_cur = !is_skipped && !current_stage.nil? && stage == current_stage && !summary.not_started_stage?(stage) # before the start date: planned
+     is_done = !is_skipped && ((current_stage && stage.position < current_stage.position) || is_closed)
+     is_delayed = is_cur && is_behind
+     kind = if is_skipped then 'skipped' elsif is_delayed then 'delayed' elsif is_done then 'done' elsif is_cur then 'cur' else 'future' end
+     color = (kind == 'skipped' || kind == 'delayed') ? nil : (@step_colors[[issue.tracker_id, stage.status_id]] || @step_colors[[issue.tracker_id, stage.position]] || default_palette[(stage.position - 1) % default_palette.size])
+     stage_name = @status_names[stage.status_id]
+     title = "#{stage_name}: #{range_tpl % [stage.planned_start_date.strftime('%m/%d'), stage.planned_end_date.strftime('%m/%d')]}#{txt[:title_delayed] if is_delayed}#{txt[:title_done] if is_done}#{txt[:title_skipped] if is_skipped}"
+     # data-last: the due date edge, which "due date first" does not move (no grip there; review 2026-11-14)
+     adj_attrs = adj_ids.include?(stage.id) ? %( data-sid="#{stage.id}"#{' data-last="1"' if stage.id == adj_ids.last && adj_ids.size > 1}) : ''
+%><div class="sq-bar sq-bar-<%= kind %>"<%= raw adj_attrs %> style="left:<%= left_px %>px;width:<%= width_px %>px<%= raw ";--c:#{h(color)}" if color %>" title="<%= title %>"><%= stage_name %></div><% end %></td>
+</tr>
+<% end %>
+<% end %>
+          </tbody>
+        </table>
+
+        <!-- SVG lightning (progress) line overlay: the polyline's vertices get a dot from the marker (no node per row) -->
+        <svg id="lightning-svg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
+          <defs>
+            <marker id="sq-dot" markerWidth="10" markerHeight="10" refX="5" refY="5" markerUnits="userSpaceOnUse"><circle cx="5" cy="5" r="3.5" fill="#ef4444" stroke="#ffffff" stroke-width="1.5"/></marker>
+          </defs>
+ <g id="sq-ms-lines"></g>
+          <line id="today-vertical-line" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="3,3" />
+          <polyline id="lightning-polyline" stroke="#ef4444" stroke-width="2.5" fill="none" stroke-linejoin="round" stroke-linecap="round" marker-mid="url(#sq-dot)" />
+        </svg>
+      </div>
+    </div>
+  </div>
+  <script type="application/json" id="sq-lightning"><%= raw({ state: status_col_width, slotWidth: slot_width, today: @today.strftime('%Y-%m-%d'),
+    # for the adjust mode: bars are placed by calendar day (see the loop above), and the working days
+    timelineStart: timeline_start.strftime('%Y-%m-%d'), timelineEnd: timeline_end.strftime('%Y-%m-%d'), dayPx: total_timeline_width.to_f / total_timeline_days,
+    nonWorking: RedmineSequentialTasks::WorkingDayCalculator.non_working_week_days,
+    slots: @slots.map { |sl| [sl[:start_date].strftime('%Y-%m-%d'), sl[:end_date].strftime('%Y-%m-%d')] } }.to_json) %></script>
+<% end %>
+
+<% if ctx.can_add && !@issues.empty? %>
+  <!-- One template for the inline "create a branched task" row; sequential_tasks.js builds the row on demand -->
+  <template id="sq-branch-template" data-unassigned="<%= l('sequential_tasks.table.unassigned') %>" data-note="<%= l('sequential_tasks.branch.inline_note', assignee: '@@A@@', date: @today.strftime('%Y/%m/%d')) %>">
+    <form method="post" class="sq-branch-form">
+      <span class="sq-tree">└─ 🌿</span>
+      <input type="text" name="subject" placeholder="<%= l('sequential_tasks.branch.placeholder') %>">
+      <button type="submit"><%= l('sequential_tasks.branch.submit') %></button>
+      <button type="button" data-act="branch-cancel">✕</button>
+    </form>
+    <span class="sq-note"></span>
+  </template>
+<% end %>
+</div>
+
+<%# The matrix as CSV, in Redmine's usual place for other formats; on the matrix screen only %>
+<% if @view == 'matrix' && !@inline && !@issues.empty? %>
+  <% other_formats_links do |f| %>
+    <%= f.link_to_with_query_parameters 'CSV' %>
+    <%# Redmine's own CSV lets the user pick UTF-8 in a dialog; here it is a second link %>
+    <%= f.link_to_with_query_parameters('CSV', { encoding: 'UTF-8' }, caption: 'CSV (UTF-8)') unless l(:general_csv_encoding).to_s.casecmp?('UTF-8') %>
+  <% end %>
+<% end %>
