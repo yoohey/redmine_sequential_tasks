@@ -143,7 +143,9 @@
 Redmineが稼働しているサーバーで、以下の手順を実施します。
 
 #### ① プラグインディレクトリの配置
-GitHub の [Releases](https://github.com/yoohey/redmine_sequential_tasks/releases) から最新版（`redmine_sequential_tasks-X.X.X.zip`）を取得し、Redmineの `plugins/` ディレクトリに `redmine_sequential_tasks` という名前で展開します。
+Redmineの `plugins/` ディレクトリに、`redmine_sequential_tasks` という名前で置きます。zip と git clone のどちらでも構いません。
+
+**zip で置く**: GitHub の [Releases](https://github.com/yoohey/redmine_sequential_tasks/releases) から最新版（`redmine_sequential_tasks-X.X.X.zip`）を取得して展開します。
 
 ```bash
 cd /path/to/redmine/plugins
@@ -151,6 +153,33 @@ cd /path/to/redmine/plugins
 unzip redmine_sequential_tasks-0.9.0.zip
 ls -la redmine_sequential_tasks
 ```
+
+**git clone で置く**: 公開用のリポジトリの main は、リリースのときだけ更新しています。版を決めて入れるなら、タグ（`v0.9.0` など）を指定します。マニュアルの画像と git の履歴も入るので、20MB ほどになります（zip は 256KB）。
+
+```bash
+cd /path/to/redmine/plugins
+git clone --branch v0.9.0 https://github.com/yoohey/redmine_sequential_tasks.git
+ls -la redmine_sequential_tasks
+```
+
+**Docker（公式の `redmine` イメージ）の場合**（参考）: プラグインを手元のフォルダに置き、`compose.yaml` で `/usr/src/redmine/plugins/redmine_sequential_tasks` に見せます。環境変数 `REDMINE_PLUGINS_MIGRATE` を付けると、起動のときにイメージが `redmine:plugins:migrate` を流すので、下の②・③は `docker compose up -d`（コンテナの作り直し）で済みます。
+
+```bash
+mkdir -p plugins
+git clone --branch v0.9.0 https://github.com/yoohey/redmine_sequential_tasks.git plugins/redmine_sequential_tasks
+```
+
+```yaml
+services:
+  redmine:
+    image: redmine:6.1.5
+    environment:
+      REDMINE_PLUGINS_MIGRATE: "1"
+    volumes:
+      - ./plugins/redmine_sequential_tasks:/usr/src/redmine/plugins/redmine_sequential_tasks
+```
+
+自前の Dockerfile でプラグインを `COPY` している場合は、`docker compose build` してから作り直します。
 
 #### ② データベースマイグレーションの実行
 プラグインが使用するテーブル（計6テーブル）を作成します。Redmine本体のテーブルには一切カラムを追加しない設計にしています（詳細なテーブル構造は第10章を参照してください）。
@@ -1196,6 +1225,8 @@ pg_dump -U <user> <dbname> > backup_before_update.sql
 cd plugins
 mv redmine_sequential_tasks /tmp/redmine_sequential_tasks.old
 unzip redmine_sequential_tasks-0.10.0.zip
+#    git clone で入れた場合は、上の2行の代わりに、新しい版のタグに切り替える
+#    cd redmine_sequential_tasks && git fetch --tags && git checkout v0.10.0 && cd ..
 
 # 3. プラグインのマイグレーションを実行（DB変更がある場合）
 cd /path/to/redmine
