@@ -108,8 +108,8 @@
      else
        cs = 'pend'; cb = 'pend'; cb_text = txt[:planned]
      end
-     planned = range_tpl % [p_start ? p_start.strftime('%m/%d') : txt[:undecided], p_end ? p_end.strftime('%m/%d') : txt[:undecided]]
-%><td class="sq-cell sq-cs-<%= cs %>"><div class="sq-r sq-rp"><%= planned %></div><% if a_start && a_end %><div class="sq-r sq-ra"><%= range_tpl % [a_start.strftime('%m/%d'), a_end.strftime('%m/%d')] %></div><% elsif a_start %><div class="sq-r sq-ra"><%= raw range_tpl % [a_start.strftime('%m/%d'), %(<span class="sq-ip">#{h(txt[:in_progress])}</span>)] %></div><% else %><div class="sq-r sq-ra sq-empty">—</div><% end %><span class="sq-cb sq-cb-<%= cb %>"><%= cb_text %></span></td>
+     planned = range_tpl % [p_start ? RedmineSequentialTasks::DateFormat.short(p_start) : txt[:undecided], p_end ? RedmineSequentialTasks::DateFormat.short(p_end) : txt[:undecided]]
+%><td class="sq-cell sq-cs-<%= cs %>"><div class="sq-r sq-rp"><%= planned %></div><% if a_start && a_end %><div class="sq-r sq-ra"><%= range_tpl % [RedmineSequentialTasks::DateFormat.short(a_start), RedmineSequentialTasks::DateFormat.short(a_end)] %></div><% elsif a_start %><div class="sq-r sq-ra"><%= raw range_tpl % [RedmineSequentialTasks::DateFormat.short(a_start), %(<span class="sq-ip">#{h(txt[:in_progress])}</span>)] %></div><% else %><div class="sq-r sq-ra sq-empty">—</div><% end %><span class="sq-cb sq-cb-<%= cb %>"><%= cb_text %></span></td>
 <% end %></tr>
 <% end %>
           </tbody>

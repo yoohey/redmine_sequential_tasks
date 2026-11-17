@@ -53,4 +53,10 @@ check('every day non-working: no endless loop', () => {
   const none = D.make([1, 2, 3, 4, 5, 6, 7]);
   assert.strictEqual(typeof none.endOf(day('2026-11-02'), 5, false), 'number');
 });
+check('dates are written as the page says: the defaults, and English patterns', () => {
+  assert.strictEqual(D.mmdd(day('2026-11-06')), '11/06'); // no page: the Japanese defaults
+  assert.strictEqual(D.slashed(day('2026-11-06')), '2026/11/06');
+  assert.strictEqual(D.format(day('2026-11-06'), '%m/%d/%Y'), '11/06/2026');
+  assert.strictEqual(D.format(day('2026-11-06'), '%-d.%-m.%y'), '6.11.26');
+});
 console.log(n + ' checks passed');

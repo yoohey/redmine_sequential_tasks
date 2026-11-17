@@ -114,8 +114,8 @@ class SequentialTaskStagesController < ApplicationController
       changes_notes.concat(count_notes)
       if new_start
         changes_notes.unshift(l('sequential_tasks.journal.start_line',
-                                from: old_start_date ? old_start_date.strftime('%Y/%m/%d') : l('sequential_tasks.journal.unset'),
-                                to: new_start.strftime('%Y/%m/%d')))
+                                from: old_start_date ? RedmineSequentialTasks::DateFormat.full(old_start_date) : l('sequential_tasks.journal.unset'),
+                                to: RedmineSequentialTasks::DateFormat.full(new_start)))
         # Saving it also runs IssuePatch#plan_sequential_date_changes, which plans the stages again from
         # this date with the durations just stored: the same dates
         @issue.safe_attributes = { 'start_date' => new_start.to_s } # for User.current
@@ -126,8 +126,8 @@ class SequentialTaskStagesController < ApplicationController
       new_due_date = stages.last.planned_end_date
       if old_due_date != new_due_date
         changes_notes << l('sequential_tasks.journal.due_line',
-                           from: old_due_date ? old_due_date.strftime('%Y/%m/%d') : l('sequential_tasks.journal.unset'),
-                           to: new_due_date.strftime('%Y/%m/%d'))
+                           from: old_due_date ? RedmineSequentialTasks::DateFormat.full(old_due_date) : l('sequential_tasks.journal.unset'),
+                           to: RedmineSequentialTasks::DateFormat.full(new_due_date))
         # through safe_attributes: the workflow may make the due date read-only
         @issue.safe_attributes = { 'due_date' => new_due_date.to_s } # for User.current
       end
@@ -196,7 +196,7 @@ class SequentialTaskStagesController < ApplicationController
 
   # "11/04〜11/05" (ja) / "11/04 - 11/05" (en)
   def date_range(from_date, to_date)
-    l('sequential_tasks.table.range', from: from_date&.strftime('%m/%d'), to: to_date&.strftime('%m/%d'))
+    l('sequential_tasks.table.range', from: RedmineSequentialTasks::DateFormat.short(from_date), to: RedmineSequentialTasks::DateFormat.short(to_date))
   end
 
   def find_issue

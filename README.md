@@ -2,7 +2,7 @@
 
 Redmine のチケット1枚のまま、「受付 → 原因解析 → 対策 → 効果確認」のような**工程ごとの予定と実績**を帯で見せる Redmine プラグインです。
 
-> **状況**: v0.9.0（2026-11-16。最初の公開版）。作者が自分で使いながら確かめている段階（ドッグフーディング）です。
+> **状況**: v0.9.1（2026-11-17）。作者が自分で使いながら確かめている段階（ドッグフーディング）です。
 
 ![タイムライン](docs/images/timeline.png)
 
@@ -50,7 +50,7 @@ unzip redmine_sequential_tasks-<版>.zip          # plugins/redmine_sequential_t
 
 ```sh
 cd <Redmine>/plugins
-git clone --branch v0.9.0 https://github.com/yoohey/redmine_sequential_tasks.git    # フォルダ名は redmine_sequential_tasks のまま
+git clone --branch v0.9.1 https://github.com/yoohey/redmine_sequential_tasks.git    # フォルダ名は redmine_sequential_tasks のまま
 ```
 
 zip・git clone のどちらのあとも、次を流して Redmine を再起動します。
@@ -64,7 +64,7 @@ bundle exec rake redmine:plugins:migrate RAILS_ENV=production
 
 ```sh
 mkdir -p plugins
-git clone --branch v0.9.0 https://github.com/yoohey/redmine_sequential_tasks.git plugins/redmine_sequential_tasks
+git clone --branch v0.9.1 https://github.com/yoohey/redmine_sequential_tasks.git plugins/redmine_sequential_tasks
 ```
 
 ```yaml

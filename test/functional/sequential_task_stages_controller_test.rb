@@ -145,7 +145,7 @@ class SequentialTaskStagesControllerTest < Redmine::ControllerTest
     assert_equal new_start, stage(1).planned_start_date
     assert_equal [3, 3, 3], [days_of(1), days_of(2), days_of(3)], 'each stage keeps its days'
     assert_equal stage(3).planned_end_date, @issue.due_date
-    assert_includes @issue.journals.reorder(:id).last.notes, new_start.strftime('%Y/%m/%d')
+    assert_includes @issue.journals.reorder(:id).last.notes, RedmineSequentialTasks::DateFormat.full(new_start) # in the language of the request
   end
 
   def test_moving_the_start_in_fixed_due_mode_keeps_the_due_date_and_shrinks_the_last_stage

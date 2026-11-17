@@ -50,6 +50,7 @@ class SequentialTaskSettingsController < ApplicationController
 
     flash[:notice] = l(:notice_successful_update)
     flash[:warning] = l('sequential_tasks.settings.switched_off_without_stages') if switched_off
+    flash[:warning] = l('sequential_tasks.settings.saved_not_enabled') if !switched_off && !@setting.enabled? && rows.any?
     redirect_to sequential_task_settings_path
   rescue ActiveRecord::RecordInvalid => e
     flash[:error] = e.message

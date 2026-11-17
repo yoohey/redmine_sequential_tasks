@@ -236,6 +236,19 @@ class SequentialDateReflowTest < ActiveSupport::TestCase
     assert_equal [5, 5], stages(issue).map { |st| days(st) }
   end
 
+  def test_a_direct_start_date_change_is_refused_when_the_due_date_it_would_move_is_read_only
+    issue = Issue.generate!(project_id: 1, tracker_id: 1, status_id: 1, start_date: Date.new(2026, 11, 2))
+    before = issue.reload.due_date
+    WorkflowPermission.create!(tracker_id: 1, old_status_id: 1, role_id: 1, field_name: 'due_date', rule: 'readonly')
+    User.current = User.find(2)
+    issue.start_date = Date.new(2026, 11, 9)
+    assert !issue.save
+    assert issue.errors[:due_date].any?
+    assert_equal before, issue.reload.due_date
+  ensure
+    User.current = nil
+  end
+
   def test_moving_is_refused_when_the_workflow_keeps_the_due_date_read_only
     issue = Issue.generate!(project_id: 1, tracker_id: 2, status_id: 1, start_date: Date.new(2026, 11, 2), due_date: Date.new(2026, 11, 3))
     # user 2 (jsmith) is a Manager (role 1) of project 1; the rule is for the new tracker

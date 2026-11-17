@@ -38,10 +38,10 @@
   end
   tier_rows = case @zoom
               when 'days'
-                [chunk.call(@slots, ->(sl) { sl[:start_date].strftime('%Y-%m') }, ->(sl) { sl[:start_date].strftime('%Y/%m') }),
+                [chunk.call(@slots, ->(sl) { sl[:start_date].strftime('%Y-%m') }, ->(sl) { RedmineSequentialTasks::DateFormat.year_month(sl[:start_date]) }),
                  @slots.map { |sl| [sl[:start_date].day, 1, sl] }]
               when 'weeks'
-                [chunk.call(@slots, ->(sl) { (sl[:start_date] + 3).strftime('%Y-%m') }, ->(sl) { (sl[:start_date] + 3).strftime('%Y/%m') }),
+                [chunk.call(@slots, ->(sl) { (sl[:start_date] + 3).strftime('%Y-%m') }, ->(sl) { RedmineSequentialTasks::DateFormat.year_month(sl[:start_date] + 3) }),
                  @slots.map { |sl| [sl[:label], 1, sl] }]
               else
                 [chunk.call(@slots, ->(sl) { sl[:start_date].year }, ->(sl) { sl[:start_date].year }),
@@ -95,7 +95,7 @@
   </aside>
 </template>
 
-<div id="sq-root" class="<%= [(@view == 'timeline' ? 'sq-lightning-on' : nil), (@inline ? 'sq-inline' : nil)].compact.join(' ') %>" data-branch-url="<%= issue_sequential_task_branches_path(issue_id: '__ID__') %>" data-back-url="<%= request.fullpath %>" data-t-fold="<%= l('sequential_tasks.branch.fold_title') %>"<% if @can_adjust %> data-adjust-url="<%= issue_sequential_task_stages_path(issue_id: '__ID__') %>" data-t-adjust-failed="<%= l('sequential_tasks.adjust.failed') %>" data-t-until="<%= l('sequential_tasks.adjust.tip_until') %>" data-t-span="<%= l('sequential_tasks.adjust.tip_span') %>" data-t-due-moves="<%= l('sequential_tasks.adjust.tip_due_moves') %>" data-t-cannot-fit="<%= l('sequential_tasks.adjust.tip_cannot_fit') %>" data-t-unit-working="<%= l('sequential_tasks.issue_bar.working_days') %>" data-t-unit-all="<%= l('sequential_tasks.issue_bar.all_days_unit') %>" data-t-start-locked="<%= l('sequential_tasks.stage_form.start_locked') %>" data-t-saved="<%= l('sequential_tasks.adjust.saved') %>"<% end %><% if @can_reorder %> data-reorder-url="<%= project_sequential_task_order_path(@project) %>" data-t-drag="<%= l('sequential_tasks.reorder.drag') %>"<% if @group_by == 'version' %> data-version-url="<%= project_sequential_task_version_path(@project) %>" data-t-version-failed="<%= l('sequential_tasks.reorder.version_failed') %>"<% end %> data-t-failed="<%= l('sequential_tasks.reorder.failed') %>"<% end %>>
+<div id="sq-root" <%= RedmineSequentialTasks::DateFormat.data_attributes.map { |k, v| %(#{k}="#{h(v)}") }.join(' ').html_safe %> class="<%= [(@view == 'timeline' ? 'sq-lightning-on' : nil), (@inline ? 'sq-inline' : nil)].compact.join(' ') %>" data-branch-url="<%= issue_sequential_task_branches_path(issue_id: '__ID__') %>" data-back-url="<%= request.fullpath %>" data-t-fold="<%= l('sequential_tasks.branch.fold_title') %>"<% if @can_adjust %> data-adjust-url="<%= issue_sequential_task_stages_path(issue_id: '__ID__') %>" data-t-adjust-failed="<%= l('sequential_tasks.adjust.failed') %>" data-t-until="<%= l('sequential_tasks.adjust.tip_until') %>" data-t-span="<%= l('sequential_tasks.adjust.tip_span') %>" data-t-due-moves="<%= l('sequential_tasks.adjust.tip_due_moves') %>" data-t-cannot-fit="<%= l('sequential_tasks.adjust.tip_cannot_fit') %>" data-t-unit-working="<%= l('sequential_tasks.issue_bar.working_days') %>" data-t-unit-all="<%= l('sequential_tasks.issue_bar.all_days_unit') %>" data-t-start-locked="<%= l('sequential_tasks.stage_form.start_locked') %>" data-t-saved="<%= l('sequential_tasks.adjust.saved') %>"<% end %><% if @can_reorder %> data-reorder-url="<%= project_sequential_task_order_path(@project) %>" data-t-drag="<%= l('sequential_tasks.reorder.drag') %>"<% if @group_by == 'version' %> data-version-url="<%= project_sequential_task_version_path(@project) %>" data-t-version-failed="<%= l('sequential_tasks.reorder.version_failed') %>"<% end %> data-t-failed="<%= l('sequential_tasks.reorder.failed') %>"<% end %>>
 <% if @issues.empty? %>
   <p class="nodata"><%= l(:label_no_data) %><% hidden_closed = @show_closed ? 0 : @closed_total; hidden_pending = @show_pending ? 0 : @pending_total %><% if hidden_closed + hidden_pending > 0 %><%= l('sequential_tasks.empty.hidden_note', closed: hidden_closed, pending: hidden_pending) %><% end %></p>
 <% elsif @view == 'matrix' %>
@@ -185,7 +185,7 @@
 %><tr class="issue-row sq-row sq-style-<%= @bar_styles[issue.tracker_id] || RedmineSequentialTasks::BarStyle::DEFAULT %> group-child-<%= g_idx %><%= ' is-delayed' if is_behind %>" data-progress-date="<%= summary.progress_date.strftime('%Y-%m-%d') %>"<%= raw ' data-edge="1"' if current_stage&.zero_day && !is_closed && summary.state != :pending %><%= raw %( data-bc="#{branch_count}") if branch_count > 0 %><%= raw %( data-id="#{issue.id}" data-p="#{parent_id}") %><%= raw %( data-adj="#{adj_stages.map { |s| "#{s.id}:#{s.planned_start_date.strftime('%Y-%m-%d')}:#{s.planned_end_date.strftime('%Y-%m-%d')}:#{s.all_days? ? 1 : 0}" }.join(',')}" data-due="#{adj_due&.strftime('%Y-%m-%d')}"#{' data-start-ok="1"' if adj_rescheduler.start_changeable?}) if adj_row %>>
 <%= sq_issue_cell(issue, summary, level, parent_id, ctx, indent: 18, oos_chip: true, release: @release[issue.id], branch: @branch_progress[issue.id], slow: @slowness[issue.id], wait: (current_stage&.zero_day && !is_closed && current_stage.actual_start_at ? (@today - current_stage.actual_start_at.to_date).to_i : nil)) %>
 <%= sq_state_cell(issue, summary, ctx, oos_note: false) %>
-<td class="sq-track" colspan="<%= @slots.size %>"><% if (rel = @release[issue.id]) && (rel_frac = release_fraction[rel[:date]]) %><i class="sq-rel sq-rel-<%= rel[:margin].negative? ? 'late' : 'ok' %>" style="left: <%= rel_frac %>%" title="<%= (rel[:margin].negative? ? ctx.release_late_tpl : ctx.release_ok_tpl) % [rel[:name], rel[:date].strftime('%Y/%m/%d'), rel[:margin].abs] %>"></i><% end %><% stages.each do |stage|
+<td class="sq-track" colspan="<%= @slots.size %>"><% if (rel = @release[issue.id]) && (rel_frac = release_fraction[rel[:date]]) %><i class="sq-rel sq-rel-<%= rel[:margin].negative? ? 'late' : 'ok' %>" style="left: <%= rel_frac %>%" title="<%= (rel[:margin].negative? ? ctx.release_late_tpl : ctx.release_ok_tpl) % [rel[:name], RedmineSequentialTasks::DateFormat.full(rel[:date]), rel[:margin].abs] %>"></i><% end %><% stages.each do |stage|
      if stage.zero_day # a wait for somebody to pick the issue up: no bar, the time spent in it as a hatched strip
        w_from = stage.actual_start_at&.to_date
        if w_from
@@ -213,7 +213,7 @@
      kind = if is_skipped then 'skipped' elsif is_delayed then 'delayed' elsif is_done then 'done' elsif is_cur then 'cur' else 'future' end
      color = (kind == 'skipped' || kind == 'delayed') ? nil : (@step_colors[[issue.tracker_id, stage.status_id]] || @step_colors[[issue.tracker_id, stage.position]] || default_palette[(stage.position - 1) % default_palette.size])
      stage_name = @status_names[stage.status_id]
-     title = "#{stage_name}: #{range_tpl % [stage.planned_start_date.strftime('%m/%d'), stage.planned_end_date.strftime('%m/%d')]}#{txt[:title_delayed] if is_delayed}#{txt[:title_done] if is_done}#{txt[:title_skipped] if is_skipped}"
+     title = "#{stage_name}: #{range_tpl % [RedmineSequentialTasks::DateFormat.short(stage.planned_start_date), RedmineSequentialTasks::DateFormat.short(stage.planned_end_date)]}#{txt[:title_delayed] if is_delayed}#{txt[:title_done] if is_done}#{txt[:title_skipped] if is_skipped}"
      # data-last: the due date edge, which "due date first" does not move (no grip there; review 2026-11-14)
      adj_attrs = adj_ids.include?(stage.id) ? %( data-sid="#{stage.id}"#{' data-last="1"' if stage.id == adj_ids.last && adj_ids.size > 1}) : ''
 %><div class="sq-bar sq-bar-<%= kind %>"<%= raw adj_attrs %> style="left:<%= left_px %>px;width:<%= width_px %>px<%= raw ";--c:#{h(color)}" if color %>" title="<%= title %>"><%= stage_name %></div><% end %></td>
@@ -244,7 +244,7 @@
 
 <% if ctx.can_add && !@issues.empty? %>
   <!-- One template for the inline "create a branched task" row; sequential_tasks.js builds the row on demand -->
-  <template id="sq-branch-template" data-unassigned="<%= l('sequential_tasks.table.unassigned') %>" data-note="<%= l('sequential_tasks.branch.inline_note', assignee: '@@A@@', date: @today.strftime('%Y/%m/%d')) %>">
+  <template id="sq-branch-template" data-unassigned="<%= l('sequential_tasks.table.unassigned') %>" data-note="<%= l('sequential_tasks.branch.inline_note', assignee: '@@A@@', date: RedmineSequentialTasks::DateFormat.full(@today)) %>">
     <form method="post" class="sq-branch-form">
       <span class="sq-tree">└─ 🌿</span>
       <input type="text" name="subject" placeholder="<%= l('sequential_tasks.branch.placeholder') %>">

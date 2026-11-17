@@ -109,6 +109,22 @@ class SequentialTasksControllerTest < Redmine::ControllerTest
     end
   end
 
+  # The emoji switches explain themselves on hover
+  def test_the_toolbar_switches_have_tooltips
+    index
+    %w[lightning slow full-view].each do |act|
+      assert_select "label.sq-check[title]:has(input[data-act=#{act}])", 1, act
+    end
+  end
+
+  # The matrix keeps the place of the day/week/month switch empty: its tracker filter is with the other filters
+  def test_the_matrix_tracker_filter_is_in_the_filter_row
+    index(view: 'matrix')
+    assert_select '.sq-tb select[data-tracker]', 1
+    index
+    assert_select 'select[data-tracker]', 0
+  end
+
   def test_rows_carry_no_per_row_forms_or_event_handlers
     %w[timeline matrix].each do |view|
       index(view: view, show_closed: '1')

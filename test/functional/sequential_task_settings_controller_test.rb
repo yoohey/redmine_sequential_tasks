@@ -18,6 +18,36 @@ class SequentialTaskSettingsControllerTest < Redmine::ControllerTest
     @setting.steps.reload.map { |s| [s.status_id, s.position, s.default_duration_days] }
   end
 
+  # The pages work under a strict Content Security Policy: no inline styles, scripts or event attributes
+  def test_the_settings_pages_have_no_inline_styles_scripts_or_handlers
+    [[:index, {}], [:edit, { id: 1 }]].each do |action, params|
+      get action, params: params
+      assert_response :success
+      content = css_select('.sq-settings').to_s # the plugin's part (Redmine's own layout has inline styles)
+      assert content.present?, "#{action}: the page"
+      assert_no_match(/\sstyle="/, content, "#{action}: inline style")
+      assert_no_match(/<script(?![^>]*\ssrc=)/, content, "#{action}: inline script")
+      assert_no_match(/\son(change|click|submit)=/, content, "#{action}: event attribute")
+    end
+  end
+
+  def test_the_color_samples_are_named_by_number_and_color
+    get :edit, params: { id: 1 }
+    assert_select '.sq-swatch[aria-label*="#"][aria-pressed]', minimum: 1
+  end
+
+  def test_a_status_outside_the_workflow_explains_itself
+    get :edit, params: { id: 1 }
+    assert_select '.sq-not-in-workflow[title]', minimum: 0 # present only for statuses outside the workflow
+    assert_select '.sq-not-in-workflow:not([title])', 0
+  end
+
+  def test_saving_stages_without_enabling_tells_that_it_is_not_enabled_yet
+    put :update, params: { id: 1, steps: [{ status_id: 1, default_duration_days: 2 }] } # no "enabled"
+    assert_redirected_to '/sequential_task_settings'
+    assert flash[:warning].present?
+  end
+
   def test_only_the_first_stage_may_be_zero_days
     put :update, params: { id: 1, enabled: '1', steps: [
       { status_id: 1, default_duration_days: 0 }, { status_id: 2, default_duration_days: 0 }

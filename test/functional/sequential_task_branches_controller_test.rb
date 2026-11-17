@@ -21,6 +21,13 @@ class SequentialTaskBranchesControllerTest < Redmine::ControllerTest
     assert_equal @parent.id, SequentialTaskIssue.find_by(issue_id: child.id).branched_from_issue_id
   end
 
+  def test_a_parent_that_does_not_exist_is_not_found
+    assert_no_difference 'Issue.count' do
+      post :create, params: { issue_id: 999_999, subject: 'Child' }
+    end
+    assert_response :not_found
+  end
+
   def test_a_private_parent_gives_a_private_child
     @parent.update_columns(is_private: true)
     post :create, params: { issue_id: @parent.id }

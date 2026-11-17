@@ -75,7 +75,7 @@
     branched_issues = @issue.visible_branched_issues
 %>
 <%= stylesheet_link_tag 'sequential_tasks', plugin: 'redmine_sequential_tasks' %>
-<div class="sequential-task-container" id="sq-stage-timeline" data-t-discard="<%= l('sequential_tasks.stage_form.discard_confirm') %>" data-non-working="<%= RedmineSequentialTasks::WorkingDayCalculator.non_working_week_days.to_json %>" style="margin: 10px 0 16px 0; padding: 12px 14px 14px 14px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+<div class="sequential-task-container" id="sq-stage-timeline" <%= RedmineSequentialTasks::DateFormat.data_attributes.map { |k, v| %(#{k}="#{h(v)}") }.join(' ').html_safe %> data-t-discard="<%= l('sequential_tasks.stage_form.discard_confirm') %>" data-non-working="<%= RedmineSequentialTasks::WorkingDayCalculator.non_working_week_days.to_json %>" style="margin: 10px 0 16px 0; padding: 12px 14px 14px 14px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; flex-wrap: wrap; gap: 8px;">
     <div style="font-weight: bold; color: #334155; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
       <span style="display: inline-block; width: 8px; height: 8px; background: <%= is_behind ? '#ef4444' : '#3b82f6' %>; border-radius: 50%;"></span>
@@ -112,7 +112,7 @@
           </label>
         </div>
       <% end %>
-      <span><%= l('sequential_tasks.issue_bar.due_date') %>: <strong><%= @issue.due_date ? @issue.due_date.strftime('%Y/%m/%d') : (stages.last&.planned_end_date ? stages.last.planned_end_date.strftime('%Y/%m/%d') : l('sequential_tasks.journal.unset')) %></strong></span>
+      <span><%= l('sequential_tasks.issue_bar.due_date') %>: <strong><%= @issue.due_date ? RedmineSequentialTasks::DateFormat.full(@issue.due_date) : (stages.last&.planned_end_date ? RedmineSequentialTasks::DateFormat.full(stages.last.planned_end_date) : l('sequential_tasks.journal.unset')) %></strong></span>
 
       <% if User.current.allowed_to?(:edit_issues, @issue.project) %>
         <% if rescheduler.adjustable_any? && schedulable && stages_saved %>
@@ -240,11 +240,11 @@
             <div id="stage-start-pill" style="position: absolute; left: -1px; top: -26px; z-index: 5; display: flex; flex-direction: column; align-items: flex-start; pointer-events: none;">
               <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 6px; font-size: 9px; line-height: 1.25; color: #334155; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,0.08); text-align: center;">
                 <div style="font-weight: bold; color: #475569;">
-                  <%= l('sequential_tasks.table.planned_label') %> <span class="stage-start-date"><%= start_planned_d ? start_planned_d.strftime('%m/%d') : '-' %></span>
+                  <%= l('sequential_tasks.table.planned_label') %> <span class="stage-start-date"><%= start_planned_d ? RedmineSequentialTasks::DateFormat.short(start_planned_d) : '-' %></span>
                 </div>
                 <% if start_actual_d %>
                   <div style="color: <%= start_diff && start_diff > 0 ? '#b91c1c' : '#047857' %>; font-weight: bold;">
-                    <%= l('sequential_tasks.table.actual_label') %> <%= start_actual_d.strftime('%m/%d') %>
+                    <%= l('sequential_tasks.table.actual_label') %> <%= RedmineSequentialTasks::DateFormat.short(start_actual_d) %>
                     <% if start_diff && start_diff > 0 %>
                       <span style="font-size: 8px;">(+<%= start_diff %>d)</span>
                     <% elsif start_diff && start_diff < 0 %>
@@ -274,11 +274,11 @@
               <!-- Pill with Planned and Actual Dates Stacked -->
               <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 6px; font-size: 9px; line-height: 1.25; color: #334155; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,0.08); text-align: center;">
                 <div style="font-weight: bold; color: #475569;">
-                  <%= l('sequential_tasks.table.planned_label') %> <span class="stage-plan-date"><%= boundary_planned_d ? boundary_planned_d.strftime('%m/%d') : '-' %></span>
+                  <%= l('sequential_tasks.table.planned_label') %> <span class="stage-plan-date"><%= boundary_planned_d ? RedmineSequentialTasks::DateFormat.short(boundary_planned_d) : '-' %></span>
                 </div>
                 <% if boundary_actual_d %>
                   <div style="color: <%= diff_days && diff_days > 0 ? '#b91c1c' : '#047857' %>; font-weight: bold;">
-                    <%= l('sequential_tasks.table.actual_label') %> <%= boundary_actual_d.strftime('%m/%d') %>
+                    <%= l('sequential_tasks.table.actual_label') %> <%= RedmineSequentialTasks::DateFormat.short(boundary_actual_d) %>
                     <% if diff_days && diff_days > 0 %>
                       <span style="font-size: 8px;">(+<%= diff_days %>d)</span>
                     <% elsif diff_days && diff_days < 0 %>
@@ -309,7 +309,7 @@
       <!-- Due-date callout: lives outside the loop, pinned to the bar's own right edge; updated live while adjusting -->
       <div id="stage-due-pill" style="position: absolute; right: 1px; top: -26px; transform: translateX(50%); z-index: 5; display: flex; flex-direction: column; align-items: center; pointer-events: none;">
         <div style="background: #eff6ff; border: 1px solid #93c5fd; border-radius: 4px; padding: 2px 6px; font-size: 9px; line-height: 1.25; color: #1e3a8a; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,0.08); text-align: center; font-weight: bold;">
-          <%= l('sequential_tasks.issue_bar.due_date') %>: <span class="stage-due-date"><%= @issue.due_date ? @issue.due_date.strftime('%m/%d') : (stages.last&.planned_end_date&.strftime('%m/%d') || '-') %></span>
+          <%= l('sequential_tasks.issue_bar.due_date') %>: <span class="stage-due-date"><%= @issue.due_date ? RedmineSequentialTasks::DateFormat.short(@issue.due_date) : (RedmineSequentialTasks::DateFormat.short(stages.last&.planned_end_date) || '-') %></span>
         </div>
         <div style="width: 1px; height: 5px; background: #93c5fd;"></div>
       </div>
@@ -332,7 +332,7 @@
             </label>
           <% end %>
           <div style="font-size: 12px; color: #334155;">
-            <%= l('sequential_tasks.stage_form.total_due') %>: <strong id="preview-total-due-date" style="color: #2563eb;"><%= stages.last&.planned_end_date ? stages.last.planned_end_date.strftime('%Y/%m/%d') : '-' %></strong>
+            <%= l('sequential_tasks.stage_form.total_due') %>: <strong id="preview-total-due-date" style="color: #2563eb;"><%= stages.last&.planned_end_date ? RedmineSequentialTasks::DateFormat.full(stages.last.planned_end_date) : '-' %></strong>
           </div>
           <div style="display: flex; gap: 8px; margin-left: auto;">
             <button type="button" data-sq-act="adjust" style="padding: 4px 12px; font-size: 11px; border: 1px solid #cbd5e1; background: #ffffff; border-radius: 4px; cursor: pointer; color: #64748b;">

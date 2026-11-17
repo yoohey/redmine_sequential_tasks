@@ -47,11 +47,6 @@ module RedmineSequentialTasks
         branched_issues.includes(:status, :assigned_to).select(&:visible?)
       end
 
-      # Safe helper to check if this issue is a branched task
-      def branch?
-        sequential_task_issue&.branched_from_issue_id.present?
-      end
-
       private
 
       # Before the save: an issue of a sequential tracker is not created, and its start or due date is not

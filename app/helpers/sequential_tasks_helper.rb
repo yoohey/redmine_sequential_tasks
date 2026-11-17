@@ -72,7 +72,7 @@ module SequentialTasksHelper
       html << %(<span class="sq-wait-chip" title="#{h(l('sequential_tasks.zero_day.title', days: wait))}">#{h(wait.positive? ? l('sequential_tasks.zero_day.chip', days: wait) : l('sequential_tasks.zero_day.chip_today'))}</span>)
     end
     if release && release[:margin].negative?
-      title = format(ctx.release_late_tpl, release[:name], release[:date].strftime('%Y/%m/%d'), -release[:margin])
+      title = format(ctx.release_late_tpl, release[:name], RedmineSequentialTasks::DateFormat.full(release[:date]), -release[:margin])
       html << %(<span class="sq-rl" title="#{h(title)}">#{h(format(ctx.release_chip_tpl, -release[:margin]))}</span>)
     end
     if issue.assigned_to

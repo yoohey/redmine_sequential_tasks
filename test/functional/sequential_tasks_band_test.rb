@@ -108,7 +108,7 @@ class SequentialTasksBandTest < Redmine::ControllerTest
     7.times { |i| phase("Phase #{i}", 1, 9) }
     index
     assert_equal 5, css_select('tr.sq-band-row').size
-    assert_select 'input[data-act=band-more][title*="2"]'
+    assert_select 'label.sq-check[title*="2"]:has(input[data-act=band-more])' # the tip is on the label (the whole switch)
   end
 
   def test_the_header_cells_span_the_lanes_too

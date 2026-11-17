@@ -33,7 +33,9 @@ class SequentialTaskNetworksController < ApplicationController
     @start_date, @end_date, @slots = RedmineSequentialTasks::TimelineSlots.build(
       @zoom, @issues.map(&:start_date).min || @today, @issues.map(&:due_date).max || @today, @today,
       day_names: I18n.t('date.abbr_day_names'), month_names: I18n.t('date.abbr_month_names'),
-      week_label: ->(first_day) { l('sequential_tasks.table.week_label', from: first_day.strftime('%m/%d')) }
+      week_label: ->(first_day) { l('sequential_tasks.table.week_label', from: RedmineSequentialTasks::DateFormat.short(first_day)) },
+      day_label: ->(day) { RedmineSequentialTasks::DateFormat.short(day) },
+      month_label: ->(day) { RedmineSequentialTasks::DateFormat.year_month(day) }
     )
     bar_styles = SequentialTaskSetting.pluck(:tracker_id, :bar_style).to_h
     @bar_style = bar_styles[@seed.tracker_id] || RedmineSequentialTasks::BarStyle::DEFAULT

@@ -17,10 +17,6 @@
     <%= sq_segment([[l('sequential_tasks.toolbar.zoom_day'), list_path.call(zoom: 'days'), @zoom == 'days'],
                     [l('sequential_tasks.toolbar.zoom_week'), list_path.call(zoom: 'weeks'), @zoom == 'weeks'],
                     [l('sequential_tasks.toolbar.zoom_month'), list_path.call(zoom: 'months'), @zoom == 'months']]) %>
-  <% else %>
-    <%= sq_dropdown(l('sequential_tasks.toolbar.tracker_filter'), 'tracker',
-                    [[l(:label_all), list_path.call(tracker_id: nil), @tracker_filter.blank?]] +
-                    @enabled_trackers.map { |t| [t.name, list_path.call(tracker_id: t.id), @tracker_filter == t.id] }) %>
   <% end %>
 
   <div class="sq-legend">
@@ -42,6 +38,13 @@
                   list_path.call(show_pending: @show_pending ? '0' : '1')) %>
   </span>
 
+  <%# The matrix's tracker filter sits with the other filters, so the place of the timeline's day/week/month stays
+      empty instead of holding a different control %>
+  <% if @view != 'timeline' %>
+    <%= sq_dropdown(l('sequential_tasks.toolbar.tracker_filter'), 'tracker',
+                    [[l(:label_all), list_path.call(tracker_id: nil), @tracker_filter.blank?]] +
+                    @enabled_trackers.map { |t| [t.name, list_path.call(tracker_id: t.id), @tracker_filter == t.id] }) %>
+  <% end %>
   <% if @versions.any? %>
     <%= sq_dropdown(l('sequential_tasks.toolbar.version_filter'), 'version',
                     record_options.call(:version_id, @version_filter, @versions) { |v| format_version_name(v) }) %>
@@ -75,13 +78,13 @@
         <a href="#" data-act="groups-collapse"><%= l('sequential_tasks.toolbar.collapse_all') %></a>
       </span>
     <% end %>
-    <label class="sq-check"><input type="checkbox" id="toggle-lightning" data-act="lightning" checked> ⚡ <%= l('sequential_tasks.toolbar.lightning') %></label>
-    <label class="sq-check"><input type="checkbox" data-act="slow" checked> 🐢 <%= l('sequential_tasks.toolbar.slow_chip') %></label>
+    <label class="sq-check" title="<%= l('sequential_tasks.toolbar.lightning_title') %>"><input type="checkbox" id="toggle-lightning" data-act="lightning" checked> ⚡ <%= l('sequential_tasks.toolbar.lightning') %></label>
+    <label class="sq-check" title="<%= l('sequential_tasks.toolbar.slow_title') %>"><input type="checkbox" data-act="slow" checked> 🐢 <%= l('sequential_tasks.toolbar.slow_chip') %></label>
     <% if @milestones.any? %>
-      <label class="sq-check"><input type="checkbox" data-act="ms-lines"> ◆ <%= l('sequential_tasks.toolbar.ms_lines') %></label>
+      <label class="sq-check" title="<%= l('sequential_tasks.toolbar.ms_lines_title') %>"><input type="checkbox" data-act="ms-lines"> ◆ <%= l('sequential_tasks.toolbar.ms_lines') %></label>
     <% end %>
     <% if @band[:lanes].size > RedmineSequentialTasks::Band::VISIBLE_LANES %>
-      <label class="sq-check"><input type="checkbox" data-act="band-more"<%= raw %( title="#{h(l('sequential_tasks.toolbar.band_overflow', count: @band[:overflow]))}") if @band[:overflow] > 0 %>> ▤ <%= l('sequential_tasks.toolbar.band_more') %></label>
+      <label class="sq-check" title="<%= @band[:overflow] > 0 ? l('sequential_tasks.toolbar.band_overflow', count: @band[:overflow]) : l('sequential_tasks.toolbar.band_more_title') %>"><input type="checkbox" data-act="band-more"> ▤ <%= l('sequential_tasks.toolbar.band_more') %></label>
     <% end %>
   <% end %>
 

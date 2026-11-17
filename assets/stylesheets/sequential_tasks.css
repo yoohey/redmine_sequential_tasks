@@ -408,3 +408,49 @@ body.sq-panel-on { padding-right: var(--sq-panel-w); min-width: 0; } /* Redmine 
 #sq-stage-timeline .sq-start-why { font-size: 10px; color: #475569; white-space: nowrap; }
 #sq-stage-timeline input:focus-visible, #sq-stage-timeline button:focus-visible, #stage-mode-switch label:has(input:focus-visible),
 #sq-root .sq-adjust-modes label:has(input:focus-visible), .sq-adjust-btn:focus-visible, .sq-mode-btn:focus-visible { outline: 2px solid #f59e0b; outline-offset: 1px; }
+
+/* ---- the tracker settings (Administration > Sequential tasks settings): no inline styles, so a strict CSP or a dark
+   theme does not break it; colors come from Redmine's own table and box styles where possible */
+.sq-settings .sq-help { color: #64748b; font-size: 12px; margin: 0 0 12px; }
+.sq-settings .sq-enable-note { color: #64748b; font-size: 12px; margin-left: 8px; }
+.sq-settings .sq-preview-head { margin: 0 0 6px; font-size: 12px; color: #64748b; display: flex; align-items: center; gap: 10px; }
+.sq-settings #sq-preview-style { display: inline-flex; border: 1px solid #cbd5e1; border-radius: 4px; overflow: hidden; }
+.sq-settings #sq-preview-style button { border: 0; padding: 2px 10px; font-size: 11px; cursor: pointer; background: transparent; }
+.sq-settings #sq-preview-style button + button { border-left: 1px solid #cbd5e1; }
+.sq-settings #sq-preview-style button[aria-pressed="true"] { background: #e2e8f0; font-weight: bold; }
+.sq-settings #sq-root { margin-bottom: 14px; }
+.sq-settings #sq-preview { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-height: 20px; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; }
+.sq-settings #sq-preview .sq-bar { position: static; width: auto; padding: 0 10px; flex: none; }
+.sq-settings #sq-preview em { color: #94a3b8; }
+.sq-settings #steps-table { width: 100%; max-width: 780px; }
+.sq-settings #steps-table th { padding: 8px 12px; }
+.sq-settings #steps-table td { padding: 6px 12px; }
+.sq-settings #steps-table .sq-col-use { width: 80px; text-align: center; white-space: nowrap; }
+.sq-settings #steps-table .sq-col-status { text-align: left; }
+.sq-settings #steps-table .sq-col-days { width: 140px; text-align: left; }
+.sq-settings #steps-table .sq-col-color { width: 220px; text-align: center; }
+.sq-settings .sq-handle { cursor: grab; color: #94a3b8; margin-right: 4px; }
+.sq-settings .sq-days-input { width: 80px; padding: 4px; text-align: right; }
+.sq-settings .sq-not-in-workflow { color: #c2410c; font-size: 12px; cursor: help; text-decoration: underline dotted; }
+.sq-settings .sq-legend { color: #64748b; font-size: 12px; margin: 6px 0 0; }
+.sq-settings #steps-tbody tr.sq-off td:not(:first-child):not(:nth-child(2)) { opacity: 0.35; }
+.sq-settings #steps-tbody tr.sq-off td:nth-child(2) { color: #94a3b8; }
+.sq-settings .sq-swatches { display: inline-grid; grid-template-columns: repeat(6, 22px); gap: 4px; vertical-align: middle; }
+.sq-settings .sq-swatch { width: 22px; height: 22px; padding: 0; border-radius: 4px; border: 2px solid transparent; cursor: pointer; background: var(--c); }
+.sq-settings .sq-swatch[aria-pressed="true"] { border-color: #0f172a; box-shadow: 0 0 0 1px #fff inset; }
+.sq-settings .sq-swatch:focus-visible { outline: 2px solid #f59e0b; outline-offset: 1px; }
+.sq-settings .sq-color-input { width: 32px; height: 24px; border: none; padding: 0; background: none; cursor: pointer; vertical-align: middle; }
+.sq-settings .sq-actions { margin-top: 25px; padding-top: 15px; border-top: 1px solid #e2e8f0; }
+.sq-settings .sq-actions .button-positive { padding: 6px 18px; font-weight: bold; }
+.sq-settings .sq-actions a { margin-left: 12px; }
+.sq-settings .sq-tracker-name { font-weight: bold; }
+.sq-settings .sq-enable-form { margin: 0; }
+.sq-settings .sq-enable-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 12px; border: 1px solid #e2e8f0; background: #f1f5f9; color: #64748b; cursor: pointer; }
+.sq-settings .sq-enable-chip.sq-on { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
+.sq-settings .sq-enable-chip.sq-locked { opacity: 0.6; cursor: default; }
+.sq-settings .sq-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; font-size: 12px; }
+.sq-settings .sq-flow-step { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; border: 1px solid #cbd5e1; }
+.sq-settings .sq-flow-days { color: #64748b; font-size: 11px; }
+.sq-settings .sq-flow-arrow { color: #94a3b8; font-size: 11px; }
+.sq-settings .sq-not-set { color: #94a3b8; font-style: italic; font-size: 12px; }
+.sq-settings .sq-warn { color: #c2410c; }

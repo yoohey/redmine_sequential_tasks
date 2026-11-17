@@ -285,7 +285,9 @@ class SequentialTasksController < ApplicationController
     @start_date, @end_date, @slots = RedmineSequentialTasks::TimelineSlots.build(
       @zoom, min_date, max_date, @today,
       day_names: I18n.t('date.abbr_day_names'), month_names: I18n.t('date.abbr_month_names'),
-      week_label: ->(first_day) { l('sequential_tasks.table.week_label', from: first_day.strftime('%m/%d')) }
+      week_label: ->(first_day) { l('sequential_tasks.table.week_label', from: RedmineSequentialTasks::DateFormat.short(first_day)) },
+      day_label: ->(day) { RedmineSequentialTasks::DateFormat.short(day) },
+      month_label: ->(day) { RedmineSequentialTasks::DateFormat.year_month(day) }
     )
   end
 
@@ -319,7 +321,7 @@ class SequentialTasksController < ApplicationController
       name = version.project_id == @project.id ? version.name : version.to_s_with_project
       { date: version.effective_date, kind: :version, label: name, url: version_path(version),
         closed: version.closed? || version.completed?,
-        title: l('sequential_tasks.milestone.version_title', name: name, date: version.effective_date.strftime('%Y/%m/%d'),
+        title: l('sequential_tasks.milestone.version_title', name: name, date: RedmineSequentialTasks::DateFormat.full(version.effective_date),
                                                               percent: version.completed_percent.round) }
     end
   end
@@ -334,7 +336,7 @@ class SequentialTasksController < ApplicationController
             .where('issues.start_date IS NULL OR issues.due_date IS NULL OR issues.start_date >= issues.due_date').map do |issue|
       date = issue.due_date || issue.start_date
       { date: date, kind: :issue, issue_id: issue.id, label: issue.subject, url: issue_path(issue), closed: issue.closed?,
-        title: l('sequential_tasks.milestone.issue_title', id: issue.id, subject: issue.subject, date: date.strftime('%Y/%m/%d')) }
+        title: l('sequential_tasks.milestone.issue_title', id: issue.id, subject: issue.subject, date: RedmineSequentialTasks::DateFormat.full(date)) }
     end
   end
 
@@ -350,7 +352,7 @@ class SequentialTasksController < ApplicationController
 
   def span_title(issue)
     l('sequential_tasks.milestone.span_title', id: issue.id, subject: issue.subject,
-                                               from: issue.start_date.strftime('%Y/%m/%d'), to: issue.due_date.strftime('%Y/%m/%d'))
+                                               from: RedmineSequentialTasks::DateFormat.full(issue.start_date), to: RedmineSequentialTasks::DateFormat.full(issue.due_date))
   end
 
   def issue_bar(issue, kind)
@@ -367,7 +369,7 @@ class SequentialTasksController < ApplicationController
       name = version.project_id == @project.id ? version.name : version.to_s_with_project
       { kind: :version, start: start, end: version.effective_date, label: name, url: version_path(version),
         closed: version.closed? || version.completed?, percent: version.completed_percent.round,
-        title: l('sequential_tasks.milestone.version_title', name: name, date: version.effective_date.strftime('%Y/%m/%d'),
+        title: l('sequential_tasks.milestone.version_title', name: name, date: RedmineSequentialTasks::DateFormat.full(version.effective_date),
                                                               percent: version.completed_percent.round) }
     end
   end

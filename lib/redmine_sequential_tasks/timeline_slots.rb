@@ -20,7 +20,8 @@ module RedmineSequentialTasks
     # is_weekend (a non-working day of Redmine's setting "non-working days", like Redmine's Gantt; not simply Saturday
     # and Sunday, so that the shading agrees with the working days the plan is counted in) and boundary (how strong the line after the slot is: :strong at a month change (days, weeks) or a
     # year change (months), :medium at a week change (days), nil otherwise).
-    def build(zoom, min_date, max_date, today, day_names:, month_names:, week_label:)
+    def build(zoom, min_date, max_date, today, day_names:, month_names:, week_label:,
+              day_label: ->(d) { d.strftime('%m/%d') }, month_label: ->(d) { d.strftime('%Y/%m') })
       before, after = PADDING.fetch(zoom)
       start_date = [min_date, today - before].min
       end_date = [max_date, today + after].max
@@ -34,9 +35,9 @@ module RedmineSequentialTasks
       end
 
       slots = case zoom
-              when 'days' then day_slots(start_date, end_date, today, day_names)
+              when 'days' then day_slots(start_date, end_date, today, day_names, day_label)
               when 'weeks' then week_slots(start_date, end_date, today, week_label)
-              else month_slots(start_date, end_date, today, month_names)
+              else month_slots(start_date, end_date, today, month_names, month_label)
               end
       mark_boundaries(slots, zoom)
       [start_date, end_date, slots]
@@ -69,9 +70,9 @@ module RedmineSequentialTasks
       (idx + (((date - slot[:start_date]).to_f + day_part) / length)) / slots.size
     end
 
-    def day_slots(start_date, end_date, today, day_names)
+    def day_slots(start_date, end_date, today, day_names, day_label)
       (start_date..end_date).map do |d|
-        { start_date: d, end_date: d, label: d.strftime('%m/%d'), sub_label: day_names[d.wday],
+        { start_date: d, end_date: d, label: day_label.call(d), sub_label: day_names[d.wday],
           is_today: d == today, is_weekend: !WorkingDayCalculator.working_day?(d) }
       end
     end
@@ -88,12 +89,12 @@ module RedmineSequentialTasks
       slots
     end
 
-    def month_slots(start_date, end_date, today, month_names)
+    def month_slots(start_date, end_date, today, month_names, month_label)
       slots = []
       cur = start_date
       while cur <= end_date
         last = cur.end_of_month
-        slots << { start_date: cur, end_date: last, label: cur.strftime('%Y/%m'), sub_label: month_names[cur.month],
+        slots << { start_date: cur, end_date: last, label: month_label.call(cur), sub_label: month_names[cur.month],
                    is_today: (cur..last).cover?(today), is_weekend: false }
         cur = last + 1
       end

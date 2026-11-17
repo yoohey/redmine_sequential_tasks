@@ -12,14 +12,4 @@ class IssueStage < ActiveRecord::Base
   def all_days?
     has_attribute?(:count_non_working) && count_non_working ? true : false
   end
-
-  # Returns true if currently in progress and past the planned end date
-  def delayed?
-    stage_status == 'in_progress' && planned_end_date.present? && User.current.today > planned_end_date
-  end
-
-  # Returns the number of days delayed past the planned end date
-  def delay_days
-    delayed? ? (User.current.today - planned_end_date).to_i : 0
-  end
 end

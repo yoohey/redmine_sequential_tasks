@@ -31,6 +31,16 @@ class LocalesTest < Minitest::Test
     assert_empty en.keys - ja.keys, 'keys only in en.yml'
   end
 
+  # Redmine names a module and its permissions by these keys; without them the Japanese screens show English
+  def test_the_module_and_its_permissions_are_named_in_both_languages
+    %w[ja en].each do |code|
+      keys = load_locale(code)
+      %w[project_module_sequential_tasks permission_view_sequential_tasks permission_manage_sequential_tasks].each do |key|
+        assert keys[key].to_s.strip != '', "#{key} in #{code}.yml"
+      end
+    end
+  end
+
   def test_no_translation_is_empty
     %w[ja en].each do |code|
       load_locale(code).each { |key, text| refute_empty text.to_s.strip, "#{code}: #{key} is empty" }

@@ -54,7 +54,7 @@ class SequentialTaskBarAdjustFormTest < Redmine::ControllerTest
     first = issue.issue_stages.order(:position).first
     get :show, params: { id: issue.id }
 
-    assert_select '#stage-pipeline-bar #stage-start-pill .stage-start-date', text: first.planned_start_date.strftime('%m/%d')
+    assert_select '#stage-pipeline-bar #stage-start-pill .stage-start-date', text: RedmineSequentialTasks::DateFormat.short(first.planned_start_date)
     assert_select "#stage-plan-pill-#{first.id} .stage-plan-date"
     assert_select '#stage-pipeline-bar #stage-due-pill .stage-due-date'
   end

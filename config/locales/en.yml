@@ -1,6 +1,11 @@
 en:
+  project_module_sequential_tasks: "Sequential tasks"
+  permission_view_sequential_tasks: "View sequential tasks"
   permission_manage_sequential_tasks: "Adjust the standard days"
   sequential_tasks:
+    date:
+      short: "%b %-d"
+      year_month: "%b %Y"
     menu:
       project: "Sequential Tasks"
       admin_settings: "Sequential Tasks Settings"
@@ -23,6 +28,10 @@ en:
       group_version: "Version"
       ms_lines: "lines"
       full_view: "Full view"
+      lightning_title: "Draws a line from today to the current stage of each issue: late ones bend left, early ones right"
+      slow_title: "Shows \"usual x N\" on issues that have stayed in their current stage longer than the usual (the median)"
+      ms_lines_title: "Draws dotted lines down every row from the points (◆) of version due dates and events"
+      band_more_title: "Shows every row of the band (up to 5) instead of the default 2"
       full_view_title: "Takes the scroll frame away and shows every row and date at once: for a whole-page screenshot, or with the browser zoomed out. Printing (Ctrl+P) does this automatically"
       band_more: "All phase rows"
       band_overflow: "%{count} more do not fit in 5 rows and are not shown"
@@ -298,7 +307,7 @@ en:
       enable_label: "Enable sequential management"
       enable_note: "* When checked, issues of this tracker get the automatic stage schedule and appear on the timeline."
       steps_heading: "Stages and standard lead times"
-      steps_help_html: "Tick the statuses an issue moves through, then set the standard days and the color of each stage.<br>The list shows the statuses the workflow of this tracker uses, Drag a row (the ⠿ on the left) to put the stages in order.<br>The first stage only may be zero days (a wait: filed, but nobody has picked it up. It uses no days; the time spent waiting is drawn as a thin hatched strip).<br>When an issue is created, the planned period of each stage is laid out on the calendar from the days set here.<br><strong style=\"color: #c2410c;\">* Changes apply to issues created from now on. The stages of existing issues do not change.</strong>"
+      steps_help_html: "Tick the statuses an issue moves through, then set the standard days and the color of each stage.<br>The list shows the statuses the workflow of this tracker uses, Drag a row (the ⠿ on the left) to put the stages in order.<br>The first stage only may be zero days (a wait: filed, but nobody has picked it up. It uses no days; the time spent waiting is drawn as a thin hatched strip).<br>When an issue is created, the planned period of each stage is laid out on the calendar from the days set here.<br><strong class=\"sq-warn\">* Changes apply to issues created from now on. The stages of existing issues do not change.</strong>"
       col_status: "Status"
       col_days: "Standard days"
       col_color: "Theme color"
@@ -313,6 +322,9 @@ en:
       confirm_disable: "Switch off \"%{tracker}\"? Planned stages will no longer be created automatically for its issues. The stage settings are kept."
       col_use: "Use"
       not_in_workflow: "(not in the workflow)"
+      not_in_workflow_title: "The workflow of this tracker has no transition to this status. To use it as a stage, allow the transitions in Administration > Workflow."
+      swatch_label: "Color sample %{n} (%{color})"
+      saved_not_enabled: "It is not enabled yet. Once enabled, issues of this tracker get the plan of their stages."
       custom_color: "Custom color"
       days_unit: "days"
       plugin_intro: "The target trackers and the stages (status order and standard lead time in days) are set on the settings screen below."

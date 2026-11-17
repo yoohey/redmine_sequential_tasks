@@ -1,56 +1,51 @@
+<% content_for :header_tags do %>
+  <%= stylesheet_link_tag 'sequential_tasks', plugin: 'redmine_sequential_tasks' %>
+<% end %>
+<div class="sq-settings">
 <h2><%= l('sequential_tasks.menu.admin_settings') %></h2>
 
-<p class="subtitle" style="color: #64748b; font-size: 13px; margin-bottom: 20px;">
-  <%= raw l('sequential_tasks.settings.index_help_html') %>
-</p>
+<p class="sq-help"><%= raw l('sequential_tasks.settings.index_help_html') %></p>
 
-<table class="list" style="border-collapse: collapse; width: 100%; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
+<table class="list">
   <thead>
-    <tr style="background: #f8fafc; border-bottom: 2px solid #cbd5e1; height: 38px;">
-      <th style="text-align: left; padding: 8px 12px; width: 180px;"><%= l('sequential_tasks.settings.col_tracker') %></th>
-      <th style="text-align: center; padding: 8px 12px; width: 130px;"><%= l('sequential_tasks.settings.col_managed') %></th>
-      <th style="text-align: left; padding: 8px 12px;"><%= l('sequential_tasks.settings.col_flow') %></th>
-      <th style="text-align: center; padding: 8px 12px; width: 100px;"><%= l('sequential_tasks.settings.col_action') %></th>
+    <tr>
+      <th><%= l('sequential_tasks.settings.col_tracker') %></th>
+      <th><%= l('sequential_tasks.settings.col_managed') %></th>
+      <th><%= l('sequential_tasks.settings.col_flow') %></th>
+      <th><%= l('sequential_tasks.settings.col_action') %></th>
     </tr>
   </thead>
   <tbody>
     <% @trackers.each do |tracker| %>
       <% setting = @settings[tracker.id] %>
       <% is_enabled = setting&.enabled? %>
-      <tr style="border-bottom: 1px solid #f1f5f9; height: 42px;">
-        <td style="padding: 8px 12px; font-weight: bold; color: #1e293b;">
-          <%= tracker.name %>
-        </td>
-        <td style="text-align: center; padding: 8px 12px;">
-          <% has_steps = setting && setting.steps.any? %>
-          <%= form_tag(enabled_sequential_task_setting_path(tracker.id), method: :patch, style: 'margin: 0;') do %>
-            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 12px; <%= is_enabled ? 'background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0;' : 'background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0;' %> <%= has_steps || is_enabled ? 'cursor: pointer;' : 'opacity: 0.6;' %>" title="<%= (has_steps || is_enabled) ? l('sequential_tasks.settings.enable_label') : l('sequential_tasks.settings.cannot_enable_without_stages') %>">
-              <%= check_box_tag 'enabled', '1', is_enabled, id: "enabled_#{tracker.id}", disabled: !(has_steps || is_enabled), onchange: (is_enabled ? "if (!confirm('#{j l('sequential_tasks.settings.confirm_disable', tracker: tracker.name)}')) { this.checked = true; return; } this.form.submit();" : 'this.form.submit()') %>
+      <% has_steps = setting && setting.steps.any? %>
+      <tr>
+        <td class="sq-tracker-name"><%= tracker.name %></td>
+        <td>
+          <%= form_tag(enabled_sequential_task_setting_path(tracker.id), method: :patch, class: 'sq-enable-form') do %>
+            <label class="sq-enable-chip<%= ' sq-on' if is_enabled %><%= ' sq-locked' unless has_steps || is_enabled %>" title="<%= (has_steps || is_enabled) ? l('sequential_tasks.settings.enable_label') : l('sequential_tasks.settings.cannot_enable_without_stages') %>">
+              <%= check_box_tag 'enabled', '1', is_enabled, id: "enabled_#{tracker.id}", disabled: !(has_steps || is_enabled), data: (is_enabled ? { confirm: l('sequential_tasks.settings.confirm_disable', tracker: tracker.name) } : {}) %>
               <%= l(is_enabled ? 'sequential_tasks.settings.enabled' : 'sequential_tasks.settings.disabled') %>
             </label>
           <% end %>
         </td>
-        <td style="padding: 8px 12px; font-size: 12px;">
-          <% if setting && setting.steps.any? %>
-            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
+        <td>
+          <% if has_steps %>
+            <div class="sq-flow">
               <% setting.steps.each_with_index do |step, idx| %>
-                <span style="display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px; background: #f8fafc; border: 1px solid #cbd5e1; color: #334155;">
-                  <strong style="margin-right: 4px;"><%= step.status&.name %></strong>
-                  <span style="color: #64748b; font-size: 11px;"><%= l('sequential_tasks.settings.days', days: step.default_duration_days) %></span>
-                </span>
-                <% if idx < setting.steps.size - 1 %>
-                  <span style="color: #94a3b8; font-size: 11px;">➔</span>
-                <% end %>
+                <span class="sq-flow-step"><strong><%= step.status&.name %></strong> <span class="sq-flow-days"><%= l('sequential_tasks.settings.days', days: step.default_duration_days) %></span></span>
+                <% if idx < setting.steps.size - 1 %><span class="sq-flow-arrow">➔</span><% end %>
               <% end %>
             </div>
           <% else %>
-            <span style="color: #94a3b8; font-style: italic;"><%= l('sequential_tasks.settings.not_set') %></span>
+            <span class="sq-not-set"><%= l('sequential_tasks.settings.not_set') %></span>
           <% end %>
         </td>
-        <td style="text-align: center; padding: 8px 12px;">
-          <%= link_to l('sequential_tasks.settings.edit'), edit_sequential_task_setting_path(tracker.id), class: 'icon icon-edit', style: 'font-size: 12px; color: #2563eb; text-decoration: none;' %>
-        </td>
+        <td><%= link_to l('sequential_tasks.settings.edit'), edit_sequential_task_setting_path(tracker.id), class: 'icon icon-edit' %></td>
       </tr>
     <% end %>
   </tbody>
 </table>
+</div>
+<%= javascript_include_tag 'sequential_task_settings', plugin: 'redmine_sequential_tasks' %>

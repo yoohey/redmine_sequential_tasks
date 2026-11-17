@@ -150,15 +150,15 @@ Redmineの `plugins/` ディレクトリに、`redmine_sequential_tasks` とい�
 ```bash
 cd /path/to/redmine/plugins
 # リリースzipを展開（ディレクトリ名が redmine_sequential_tasks になることを確認）
-unzip redmine_sequential_tasks-0.9.0.zip
+unzip redmine_sequential_tasks-0.9.1.zip
 ls -la redmine_sequential_tasks
 ```
 
-**git clone で置く**: 公開用のリポジトリの main は、リリースのときだけ更新しています。版を決めて入れるなら、タグ（`v0.9.0` など）を指定します。マニュアルの画像と git の履歴も入るので、20MB ほどになります（zip は 256KB）。
+**git clone で置く**: 公開用のリポジトリの main は、リリースのときだけ更新しています。版を決めて入れるなら、タグ（`v0.9.1` など）を指定します。マニュアルの画像と git の履歴も入るので、20MB ほどになります（zip は 256KB）。
 
 ```bash
 cd /path/to/redmine/plugins
-git clone --branch v0.9.0 https://github.com/yoohey/redmine_sequential_tasks.git
+git clone --branch v0.9.1 https://github.com/yoohey/redmine_sequential_tasks.git
 ls -la redmine_sequential_tasks
 ```
 
@@ -166,7 +166,7 @@ ls -la redmine_sequential_tasks
 
 ```bash
 mkdir -p plugins
-git clone --branch v0.9.0 https://github.com/yoohey/redmine_sequential_tasks.git plugins/redmine_sequential_tasks
+git clone --branch v0.9.1 https://github.com/yoohey/redmine_sequential_tasks.git plugins/redmine_sequential_tasks
 ```
 
 ```yaml
