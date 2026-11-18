@@ -48,7 +48,7 @@ cd <Redmine>/plugins
 unzip redmine_sequential_tasks-<版>.zip          # plugins/redmine_sequential_tasks/ ができる
 ```
 
-**git clone で**: このリポジトリの main は、リリースのときだけ更新します。版を決めて入れるなら、タグを指定します（マニュアルの画像と git の履歴も入るので、20MB ほどになります。zip は 260KB）。
+**git clone で**: このリポジトリの main は、リリースのときだけ更新します。版を決めて入れるなら、タグを指定します（マニュアルの画像と git の履歴も入るので、50MB ほどになります。zip は 260KB）。
 
 ```sh
 cd <Redmine>/plugins

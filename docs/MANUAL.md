@@ -156,7 +156,7 @@ unzip redmine_sequential_tasks-0.9.1.zip
 ls -la redmine_sequential_tasks
 ```
 
-**git clone で置く**: 公開用のリポジトリの main は、リリースのときだけ更新しています。版を決めて入れるなら、タグ（`v0.9.1` など）を指定します。マニュアルの画像と git の履歴も入るので、20MB ほどになります（zip は 260KB）。
+**git clone で置く**: 公開用のリポジトリの main は、リリースのときだけ更新しています。版を決めて入れるなら、タグ（`v0.9.1` など）を指定します。マニュアルの画像と git の履歴も入るので、50MB ほどになります（zip は 260KB）。
 
 ```bash
 cd /path/to/redmine/plugins

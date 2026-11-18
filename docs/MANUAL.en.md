@@ -156,7 +156,7 @@ unzip redmine_sequential_tasks-0.9.1.zip
 ls -la redmine_sequential_tasks
 ```
 
-**With git clone**: the main branch of the public repository is updated only at releases. To install a given version, name its tag (`v0.9.1`, etc.). The images of the manual and the git history come along, about 20 MB (the zip is 260 KB).
+**With git clone**: the main branch of the public repository is updated only at releases. To install a given version, name its tag (`v0.9.1`, etc.). The images of the manual and the git history come along, about 50 MB (the zip is 260 KB).
 
 ```bash
 cd /path/to/redmine/plugins

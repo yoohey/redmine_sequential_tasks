@@ -48,7 +48,7 @@ cd <Redmine>/plugins
 unzip redmine_sequential_tasks-<version>.zip          # creates plugins/redmine_sequential_tasks/
 ```
 
-**With git clone**: the main branch of this repository is updated only at releases. To install a given version, name its tag (the images of the manual and the git history come along, about 20 MB; the zip is 260 KB).
+**With git clone**: the main branch of this repository is updated only at releases. To install a given version, name its tag (the images of the manual and the git history come along, about 50 MB; the zip is 260 KB).
 
 ```sh
 cd <Redmine>/plugins
