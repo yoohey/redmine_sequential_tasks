@@ -1,5 +1,7 @@
 # Redmine Sequential Tasks 運用・利用マニュアル
 
+[English](MANUAL.en.md)
+
 本書は、Redmineプラグイン **`redmine_sequential_tasks`（シーケンシャルタスク）** の運用・利用マニュアルです。  
 日常のチケット起票・進捗管理を行う担当者（ソフトウェアの開発者のほか、設計・品質保証・生産技術などの担当者）から、複数案件を束ねるプロジェクト管理者（PM / スクラムマスター）、および環境の構築・運用を担うシステム管理者までを対象としています。
 
@@ -131,7 +133,7 @@
 
 - **Redmine**: 6.0.0 以上を対象としています。
   - 確認済み: Redmine 6.1.5（PostgreSQL 17）で全自動テストと画面、Redmine 7.0.2 で全自動テスト。作者は Redmine 7.0.2 の環境で、自分の仕事で試しています（すべての機能を網羅的に確かめたわけではありません）。
-  - 未確認: Redmine 6.0 系、Redmine 7.0 の画面。
+  - 未確認: Redmine 6.0 系。
 - **データベース**: PostgreSQL（17 で確認）。MySQL / SQLite3 は、標準のマイグレーションだけを使っていますが未確認です。
 - **ブラウザ**: Chromium系（Google Chrome, Edge 等）で確認。Firefox / Safari は未確認です。
 - **外部依存関係**: **なし**（巨大な外部JS/CSSライブラリを一切使わず、標準HTML/CSS/Vanilla JS/SVGだけで軽量に動作するように作っています）
@@ -154,7 +156,7 @@ unzip redmine_sequential_tasks-0.9.1.zip
 ls -la redmine_sequential_tasks
 ```
 
-**git clone で置く**: 公開用のリポジトリの main は、リリースのときだけ更新しています。版を決めて入れるなら、タグ（`v0.9.1` など）を指定します。マニュアルの画像と git の履歴も入るので、20MB ほどになります（zip は 256KB）。
+**git clone で置く**: 公開用のリポジトリの main は、リリースのときだけ更新しています。版を決めて入れるなら、タグ（`v0.9.1` など）を指定します。マニュアルの画像と git の履歴も入るので、20MB ほどになります（zip は 260KB）。
 
 ```bash
 cd /path/to/redmine/plugins

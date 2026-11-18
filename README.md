@@ -2,6 +2,8 @@
 
 Redmine のチケット1枚のまま、「受付 → 原因解析 → 対策 → 効果確認」のような**工程ごとの予定と実績**を帯で見せる Redmine プラグインです。
 
+[English](README.en.md)
+
 > **状況**: v0.9.1（2026-11-17）。作者が自分で使いながら確かめている段階（ドッグフーディング）です。
 
 ![タイムライン](docs/images/timeline.png)
@@ -46,7 +48,7 @@ cd <Redmine>/plugins
 unzip redmine_sequential_tasks-<版>.zip          # plugins/redmine_sequential_tasks/ ができる
 ```
 
-**git clone で**: このリポジトリの main は、リリースのときだけ更新します。版を決めて入れるなら、タグを指定します（マニュアルの画像と git の履歴も入るので、20MB ほどになります。zip は 256KB）。
+**git clone で**: このリポジトリの main は、リリースのときだけ更新します。版を決めて入れるなら、タグを指定します（マニュアルの画像と git の履歴も入るので、20MB ほどになります。zip は 260KB）。
 
 ```sh
 cd <Redmine>/plugins
