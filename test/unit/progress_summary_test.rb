@@ -29,6 +29,26 @@ class ProgressSummaryTest < Minitest::Test
     RedmineSequentialTasks::ProgressSummary.new(FakeIssue.new(status_id, closed), stage_list, today)
   end
 
+  # the anchor of a change of the plan
+  def test_the_anchor_is_the_current_stage
+    assert_equal 2, summary(20).schedule_anchor.position
+  end
+
+  def test_a_status_without_a_stage_before_anything_started_is_anchored_at_the_first_stage
+    list = stages(1 => 'pending', 2 => 'pending', 3 => 'pending')
+    assert_nil summary(99, list).current_stage
+    assert_equal 1, summary(99, list).schedule_anchor.position
+  end
+
+  def test_a_status_without_a_stage_after_a_stage_finished_has_no_anchor
+    list = stages(1 => 'completed', 2 => 'pending', 3 => 'pending')
+    assert_nil summary(99, list).schedule_anchor
+  end
+
+  def test_no_stages_no_anchor
+    assert_nil summary(99, []).schedule_anchor
+  end
+
   # on a weekend no stage covers today; the stage planned for the working day before holds
   def test_on_a_weekend_the_stage_of_the_friday_before_is_expected
     list = [

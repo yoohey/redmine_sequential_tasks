@@ -14,6 +14,7 @@
                   @enabled_trackers.map { |t| [t.name, analysis_path.call(tracker_id: t.id), @tracker_filter == t.id] }) %>
   <%= sq_dropdown(l('sequential_tasks.analysis.period'), 'period',
                   ([nil] + SequentialTaskAnalysisController::PERIODS).map { |d| [days_text.call(d), analysis_path.call(days: d), @days == d] }) %>
+  <%= sq_as_of %>
 </div>
 
 <div id="sq-root" class="sq-analysis">

@@ -47,4 +47,22 @@ class SequentialTaskBranchesControllerTest < Redmine::ControllerTest
     end
     assert_response :forbidden
   end
+
+  def test_a_branch_of_a_task_that_starts_later_starts_with_it
+    @parent.update_columns(start_date: Date.today + 10)
+    post :create, params: { issue_id: @parent.id, subject: 'Child' }
+    assert_equal Date.today + 10, Issue.order(:id).last.start_date
+  end
+
+  def test_a_branch_of_a_task_that_has_started_starts_today
+    @parent.update_columns(start_date: Date.today - 3)
+    post :create, params: { issue_id: @parent.id, subject: 'Child' }
+    assert_equal Date.today, Issue.order(:id).last.start_date
+  end
+
+  def test_a_start_date_given_on_the_form_wins
+    @parent.update_columns(start_date: Date.today + 10)
+    post :create, params: { issue_id: @parent.id, subject: 'Child', start_date: (Date.today + 2).to_s }
+    assert_equal Date.today + 2, Issue.order(:id).last.start_date
+  end
 end

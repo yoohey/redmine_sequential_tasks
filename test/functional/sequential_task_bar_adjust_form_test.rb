@@ -20,6 +20,33 @@ class SequentialTaskBarAdjustFormTest < Redmine::ControllerTest
     days.each_with_index { |d, i| @setting.steps.create!(status_id: [1, 2, 3][i], position: i + 1, default_duration_days: d) }
   end
 
+  def test_the_floating_window_keeps_itself_through_the_forms
+    steps(3, 3, 3)
+    issue = Issue.generate!(project_id: 1, tracker_id: 1, status_id: 1)
+    get :show, params: { id: issue.id, sq_float: '1' }
+    assert_select '#sequential-task-stage-edit-form input[type=hidden][name=sq_float][value="1"]'
+    assert_select "#branch-create-form-panel input[name=back_url][value='/issues/#{issue.id}?sq_float=1']"
+    get :show, params: { id: issue.id }
+    assert_select 'input[name=sq_float]', 0
+  end
+
+  def test_the_stage_timeline_has_no_inline_styles_but_the_stage_colors
+    steps(3, 3, 3)
+    issue = Issue.generate!(project_id: 1, tracker_id: 1, status_id: 1)
+    get :show, params: { id: issue.id }
+    styles = css_select('#sq-stage-timeline [style]').map { |e| e['style'] }
+    assert styles.any?, 'the stages carry their colors'
+    left = styles.reject { |st| st.match?(/\A--c: #\h{6};\z/) || st == 'visibility: hidden;' }
+    assert_empty left, 'the looks live in sequential_tasks.css; only the color of a stage (and the hidden handle the script shows) stay in the page'
+  end
+
+  def test_the_branch_form_starts_on_the_parents_start_when_it_is_later
+    steps(3, 3, 3)
+    issue = Issue.generate!(project_id: 1, tracker_id: 1, status_id: 1, start_date: Date.today + 14)
+    get :show, params: { id: issue.id }
+    assert_select "input[type=date][name=start_date][value='#{issue.reload.start_date}']:not(#stage-start-input)"
+  end
+
   def test_the_mode_switch_sits_in_the_heading_row_and_joins_the_form
     steps(3, 3, 3)
     issue = Issue.generate!(project_id: 1, tracker_id: 1, status_id: 1)

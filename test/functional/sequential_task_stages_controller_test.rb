@@ -33,6 +33,33 @@ class SequentialTaskStagesControllerTest < Redmine::ControllerTest
     put :update, params: { issue_id: @issue.id, stages: params, mode: mode }.compact
   end
 
+  # an issue in a status that is not one of the stages (here Feedback, 4), before any stage has started
+  def outside_issue
+    issue = Issue.generate!(project_id: 1, tracker_id: 1, status_id: 4, author: User.find(2))
+    assert issue.issue_stages.all? { |s| s.stage_status == 'pending' }, 'nothing has started'
+    @issue = issue
+  end
+
+  def test_a_status_without_a_stage_can_be_adjusted_from_the_first_stage
+    outside_issue
+    adjust(1 => 5)
+    assert_redirected_to "/issues/#{@issue.id}"
+    assert_equal 5, RedmineSequentialTasks::WorkingDayCalculator.working_days_between(stage(1).planned_start_date, stage(1).planned_end_date)
+  end
+
+  def test_a_status_without_a_stage_can_have_its_start_moved
+    outside_issue
+    new_start = RedmineSequentialTasks::WorkingDayCalculator.next_working_day(stage(1).planned_start_date + 7)
+    put :update, params: { issue_id: @issue.id, stages: {}, start_date: new_start.to_s }
+    assert_equal new_start, @issue.reload.start_date
+    assert_equal new_start, stage(1).planned_start_date
+  end
+
+  def test_a_save_from_the_floating_window_goes_back_to_it
+    put :update, params: { issue_id: @issue.id, stages: { stage(1).id.to_s => { duration_days: 4 } }, sq_float: '1' }
+    assert_redirected_to "/issues/#{@issue.id}?sq_float=1"
+  end
+
   def test_completed_stages_keep_their_planned_dates
     move_to(2) # stage 1 completed, stage 2 current
     before = stage(1).attributes.slice('planned_start_date', 'planned_end_date')

@@ -196,7 +196,7 @@ module RedmineSequentialTasks
         return if stages.empty?
 
         summary = RedmineSequentialTasks::ProgressSummary.new(self, stages, User.current.today)
-        rescheduler = RedmineSequentialTasks::StageRescheduler.new(stages, closed? ? nil : summary.current_stage)
+        rescheduler = RedmineSequentialTasks::StageRescheduler.new(stages, closed? ? nil : summary.schedule_anchor)
         return unless rescheduler.adjustable_any?
 
         calc = RedmineSequentialTasks::WorkingDayCalculator

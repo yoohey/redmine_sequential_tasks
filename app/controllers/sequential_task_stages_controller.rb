@@ -14,7 +14,7 @@ class SequentialTaskStagesController < ApplicationController
 
     # Completed stages stay as they are; only the current stage and the later ones are rescheduled
     summary = RedmineSequentialTasks::ProgressSummary.new(@issue, stages, User.current.today)
-    rescheduler = RedmineSequentialTasks::StageRescheduler.new(stages, @issue.closed? ? nil : summary.current_stage)
+    rescheduler = RedmineSequentialTasks::StageRescheduler.new(stages, @issue.closed? ? nil : summary.schedule_anchor)
     # The due date follows the last stage; when the workflow makes it read-only, nothing is changed
     unless @issue.safe_attribute?('due_date', User.current)
       flash[:error] = l('sequential_tasks.flash.due_not_changeable')
@@ -29,7 +29,7 @@ class SequentialTaskStagesController < ApplicationController
     end
 
     # no working day within about half a year: the plan cannot be built
-    unless RedmineSequentialTasks::WorkingDayCalculator.schedulable?(summary.current_stage&.planned_start_date || User.current.today)
+    unless RedmineSequentialTasks::WorkingDayCalculator.schedulable?(summary.schedule_anchor&.planned_start_date || User.current.today)
       flash[:error] = l('sequential_tasks.flash.no_working_day')
       finish
       return
@@ -170,7 +170,8 @@ class SequentialTaskStagesController < ApplicationController
       flash.discard
       render json: { ok: error.blank?, error: error, notice: notice }
     else
-      redirect_to issue_path(@issue)
+      # the floating window of the project screen stays in its own look after saving
+      redirect_to issue_path(@issue, params[:sq_float] == '1' ? { sq_float: 1 } : {})
     end
   end
 

@@ -84,10 +84,33 @@
 
 <%# The panel for the issue: the script makes it once, in <body>, from this template (so that a refresh of the
     content does not touch it) %>
+<%# the floating window: the head of an issue, its attributes and its stage timeline (sequential_tasks.js) %>
+<template id="sq-float-template">
+  <aside id="sq-float" hidden>
+    <div class="sq-float-head" title="<%= l('sequential_tasks.float.drag') %>">
+      <span class="sq-float-title"></span>
+      <span class="sq-panel-step">
+        <button type="button" class="sq-panel-prev" title="<%= l('sequential_tasks.panel.prev_title') %>">↑ <%= l('sequential_tasks.panel.prev') %></button><button type="button" class="sq-panel-next" title="<%= l('sequential_tasks.panel.next_title') %>">↓ <%= l('sequential_tasks.panel.next') %></button>
+      </span>
+      <button type="button" class="sq-float-panel">◨ <%= l('sequential_tasks.float.to_panel') %></button>
+      <a class="sq-float-open" href="#" target="_blank" rel="noopener">↗ <%= l('sequential_tasks.panel.open_page') %></a>
+      <button type="button" class="sq-float-close" title="<%= l('sequential_tasks.panel.close') %>">×</button>
+    </div>
+    <iframe class="sq-float-frame" title="<%= l('sequential_tasks.panel.frame_title') %>"></iframe>
+    <div class="sq-float-grip" title="<%= l('sequential_tasks.float.resize') %>"></div>
+  </aside>
+</template>
 <template id="sq-panel-template">
-  <aside id="sq-panel" hidden>
+  <aside id="sq-panel" hidden data-t-bottom="<%= l('sequential_tasks.panel.dock_bottom') %>" data-t-right="<%= l('sequential_tasks.panel.dock_right') %>">
+    <%# the top edge, to drag the height of the panel when it is at the bottom %>
+    <div class="sq-panel-grip" title="<%= l('sequential_tasks.panel.resize') %>"></div>
     <div class="sq-panel-head">
       <span class="sq-panel-title"></span>
+      <%# the issue one row up and one row down in the table of this screen (the issue page's own links follow the numbers, so the panel hides them) %>
+      <span class="sq-panel-step">
+        <button type="button" class="sq-panel-prev" title="<%= l('sequential_tasks.panel.prev_title') %>">↑ <%= l('sequential_tasks.panel.prev') %></button><button type="button" class="sq-panel-next" title="<%= l('sequential_tasks.panel.next_title') %>">↓ <%= l('sequential_tasks.panel.next') %></button>
+      </span>
+      <button type="button" class="sq-panel-dock"></button>
       <a class="sq-panel-open" href="#" target="_blank" rel="noopener">↗ <%= l('sequential_tasks.panel.open_page') %></a>
       <button type="button" class="sq-panel-close" title="<%= l('sequential_tasks.panel.close') %>">×</button>
     </div>
@@ -111,7 +134,7 @@
     </span>
     <span class="sq-adjust-saves"><%= l('sequential_tasks.adjust.saves_on_release') %></span>
     <%# the selected mode in words (not only on hover: touch and keyboard), read out when it changes %>
-    <span class="sq-adjust-hint"><span class="sq-adjust-mode-hint" aria-live="polite"><%= l('sequential_tasks.stage_form.mode_fixed_due_hint') %></span> — <%= l('sequential_tasks.adjust.hint') %></span>
+    <span class="sq-adjust-hint"><span class="sq-adjust-mode-hint" aria-live="polite"><%= l('sequential_tasks.stage_form.mode_fixed_due_hint') %></span> <%= l('sequential_tasks.adjust.hint') %></span>
   </div>
   <% end %>
   <div class="sq-frame">
@@ -176,13 +199,13 @@
      parent_id = @seq_issues[issue.id]&.branched_from_issue_id
      branch_count = @branch_counts[issue.id].to_i
      # The adjust mode: which stages may move, the same rules as the issue page
-     adj_rescheduler = @can_adjust && !is_closed ? RedmineSequentialTasks::StageRescheduler.new(stages, current_stage) : nil
+     adj_rescheduler = @can_adjust && !is_closed ? RedmineSequentialTasks::StageRescheduler.new(stages, summary.schedule_anchor) : nil
      adj_row = adj_rescheduler&.adjustable_any?
      adj_stages = adj_row ? stages.select { |s| adj_rescheduler.adjustable?(s) && s.planned_start_date && s.planned_end_date } : []
      adj_row &&= adj_stages.any?
      adj_ids = adj_stages.map(&:id)
      adj_due = stages.reject(&:zero_day).last&.planned_end_date # the end of the last stage: the fixed due date of "due date first"
-%><tr class="issue-row sq-row sq-style-<%= @bar_styles[issue.tracker_id] || RedmineSequentialTasks::BarStyle::DEFAULT %> group-child-<%= g_idx %><%= ' is-delayed' if is_behind %>" data-progress-date="<%= summary.progress_date.strftime('%Y-%m-%d') %>"<%= raw ' data-edge="1"' if current_stage&.zero_day && !is_closed && summary.state != :pending %><%= raw %( data-bc="#{branch_count}") if branch_count > 0 %><%= raw %( data-id="#{issue.id}" data-p="#{parent_id}") %><%= raw %( data-adj="#{adj_stages.map { |s| "#{s.id}:#{s.planned_start_date.strftime('%Y-%m-%d')}:#{s.planned_end_date.strftime('%Y-%m-%d')}:#{s.all_days? ? 1 : 0}" }.join(',')}" data-due="#{adj_due&.strftime('%Y-%m-%d')}"#{' data-start-ok="1"' if adj_rescheduler.start_changeable?}) if adj_row %>>
+%><tr class="issue-row sq-row sq-style-<%= @bar_styles[issue.tracker_id] || RedmineSequentialTasks::BarStyle::DEFAULT %> group-child-<%= g_idx %><%= ' is-delayed' if is_behind %>" data-progress-date="<%= summary.progress_date.strftime('%Y-%m-%d') %>"<%= raw ' data-edge="1"' if current_stage&.zero_day && !is_closed && summary.state != :pending %><%= raw %( data-bc="#{branch_count}") if branch_count > 0 %><%= raw %( data-id="#{issue.id}" data-p="#{parent_id}") %><%= raw %( data-bs="#{h RedmineSequentialTasks::DateFormat.full(issue.start_date)}") if ctx.can_add && issue.start_date && issue.start_date > @today %><%= raw %( data-adj="#{adj_stages.map { |s| "#{s.id}:#{s.planned_start_date.strftime('%Y-%m-%d')}:#{s.planned_end_date.strftime('%Y-%m-%d')}:#{s.all_days? ? 1 : 0}" }.join(',')}" data-due="#{adj_due&.strftime('%Y-%m-%d')}"#{' data-start-ok="1"' if adj_rescheduler.start_changeable?}) if adj_row %>>
 <%= sq_issue_cell(issue, summary, level, parent_id, ctx, indent: 18, oos_chip: true, release: @release[issue.id], branch: @branch_progress[issue.id], slow: @slowness[issue.id], wait: (current_stage&.zero_day && !is_closed && current_stage.actual_start_at ? (@today - current_stage.actual_start_at.to_date).to_i : nil)) %>
 <%= sq_state_cell(issue, summary, ctx, oos_note: false) %>
 <td class="sq-track" colspan="<%= @slots.size %>"><% if (rel = @release[issue.id]) && (rel_frac = release_fraction[rel[:date]]) %><i class="sq-rel sq-rel-<%= rel[:margin].negative? ? 'late' : 'ok' %>" style="left: <%= rel_frac %>%" title="<%= (rel[:margin].negative? ? ctx.release_late_tpl : ctx.release_ok_tpl) % [rel[:name], RedmineSequentialTasks::DateFormat.full(rel[:date]), rel[:margin].abs] %>"></i><% end %><% stages.each do |stage|
@@ -244,7 +267,7 @@
 
 <% if ctx.can_add && !@issues.empty? %>
   <!-- One template for the inline "create a branched task" row; sequential_tasks.js builds the row on demand -->
-  <template id="sq-branch-template" data-unassigned="<%= l('sequential_tasks.table.unassigned') %>" data-note="<%= l('sequential_tasks.branch.inline_note', assignee: '@@A@@', date: RedmineSequentialTasks::DateFormat.full(@today)) %>">
+  <template id="sq-branch-template" data-unassigned="<%= l('sequential_tasks.table.unassigned') %>" data-note="<%= l('sequential_tasks.branch.inline_note', assignee: '@@A@@', date: '@@D@@') %>" data-today="<%= RedmineSequentialTasks::DateFormat.full(@today) %>">
     <form method="post" class="sq-branch-form">
       <span class="sq-tree">└─ 🌿</span>
       <input type="text" name="subject" placeholder="<%= l('sequential_tasks.branch.placeholder') %>">

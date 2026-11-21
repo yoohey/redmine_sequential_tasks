@@ -278,7 +278,9 @@
     var input = form.querySelector('input[name="subject"]');
     input.value = subject + '_' + number;
     var note = fragment.querySelector('.sq-note');
-    note.textContent = template.getAttribute('data-note').replace('@@A@@', assignee);
+    // the start date the branch will get: the parent's when it starts later than today (data-bs), else today
+    var startDate = tr.getAttribute('data-bs') || template.getAttribute('data-today');
+    note.textContent = template.getAttribute('data-note').replace('@@A@@', assignee).replace('@@D@@', startDate);
 
     var columns = Array.prototype.reduce.call(tr.cells, function (n, c) { return n + c.colSpan; }, 0);
     var row = document.createElement('tr');
@@ -657,6 +659,66 @@
 
   var panelUrl = '';
   var refreshing = false;
+  var panelIssueId = null; // the issue shown in the panel: its rows are marked (also after a refresh)
+
+  function markSelected() {
+    each(document.querySelectorAll('#sq-root tr.sq-selected'), function (tr) { tr.classList.remove('sq-selected'); });
+    var shown = panelIssueId || floatIssueId;
+    if (shown) {
+      each(document.querySelectorAll('#sq-root tr.sq-row[data-id="' + shown + '"]'), function (tr) { tr.classList.add('sq-selected'); });
+    }
+    updateStepButtons();
+  }
+
+  // The previous and next issue for the panel's buttons: in the order of the rows on the screen (its sorting, filters,
+  // groups and folded branches), not Redmine's order by number, which the panel hides
+  function visibleIssueRows() {
+    var seen = {};
+    return Array.prototype.filter.call(document.querySelectorAll('#sq-root tr.sq-row[data-id]'), function (tr) {
+      var id = tr.getAttribute('data-id');
+      if (seen[id] || !tr.querySelector('a.sq-subj') || tr.offsetParent === null) return false;
+      seen[id] = true;
+      return true;
+    });
+  }
+
+  function stepRow(delta) {
+    var rows = visibleIssueRows();
+    var at = -1;
+    var shown = panelIssueId || floatIssueId;
+    for (var i = 0; i < rows.length; i++) { if (rows[i].getAttribute('data-id') === shown) { at = i; break; } }
+    if (at < 0) return null;
+    return rows[at + delta] || null;
+  }
+
+  function updateStepButtons() { // the panel's and the floating window's (whichever is open follows the shown issue)
+    var up = !stepRow(-1), down = !stepRow(1);
+    each(document.querySelectorAll('#sq-panel .sq-panel-prev, #sq-float .sq-panel-prev'), function (b) { b.disabled = up; });
+    each(document.querySelectorAll('#sq-panel .sq-panel-next, #sq-float .sq-panel-next'), function (b) { b.disabled = down; });
+  }
+
+  function stepPanel(delta) {
+    var row = stepRow(delta);
+    if (!row) return;
+    var link = row.querySelector('a.sq-subj');
+    if (floatOpen()) openFloat(link.getAttribute('href'), link.textContent.trim());
+    else openPanel(link);
+    var scroller = row.closest('.sq-scroller');
+    if (scroller) { // a row out of the scroll frame comes in just at its edge: one row of scrolling, up or down alike
+      var head = scroller.querySelector('thead');
+      var frame = scroller.getBoundingClientRect();
+      var box = row.getBoundingClientRect();
+      var top = frame.top + scroller.clientTop + (head ? head.offsetHeight : 0); // under the frozen header
+      var bottom = frame.top + scroller.clientTop + scroller.clientHeight;        // above the horizontal scroll bar
+      if (box.top < top) scroller.scrollTop -= top - box.top;
+      else if (box.bottom > bottom) scroller.scrollTop += box.bottom - bottom;
+    }
+  }
+
+  function issueIdOf(path) {
+    var m = /\/issues\/(\d+)(\/|$|\?)/.exec(path || '');
+    return m ? m[1] : null;
+  }
 
   // The panel lives in <body>, outside the content that a refresh replaces; it is made once, from the template
   function ensurePanel() {
@@ -668,15 +730,108 @@
     panel = document.getElementById('sq-panel');
     panel.querySelector('.sq-panel-close').addEventListener('click', closePanel);
     panel.querySelector('iframe').addEventListener('load', onPanelLoad);
+    panel.querySelector('.sq-panel-dock').addEventListener('click', function () {
+      setDock(panelDock() === 'bottom' ? 'right' : 'bottom');
+    });
+    panel.querySelector('.sq-panel-grip').addEventListener('pointerdown', startPanelResize);
+    panel.querySelector('.sq-panel-prev').addEventListener('click', function () { stepPanel(-1); });
+    panel.querySelector('.sq-panel-next').addEventListener('click', function () { stepPanel(1); });
+    try {
+      var savedHeight = parseInt(window.localStorage.getItem(PANEL_HEIGHT_KEY), 10);
+      if (savedHeight) setPanelHeight(savedHeight);
+    } catch (e) { /* no storage: the default height */ }
+    applyDock(panel);
     return panel;
   }
 
-  function relayout() { fitScrollers(); scheduleLightning(); } // the page got narrower or wider
+  // Where the panel stands, right or bottom: the button in its head switches it, and the browser remembers it (a
+  // convenience, like the width of the issue column). At the bottom, its top edge drags its height.
+  var PANEL_DOCK_KEY = 'sqPanelDock', PANEL_HEIGHT_KEY = 'sqPanelHeight', MIN_PANEL_H = 150;
+  var dockMemo = null;
+
+  function panelDock() {
+    if (dockMemo) return dockMemo;
+    try { dockMemo = window.localStorage.getItem(PANEL_DOCK_KEY) === 'bottom' ? 'bottom' : 'right'; } catch (e) { dockMemo = 'right'; }
+    return dockMemo;
+  }
+
+  function applyDock(panel) {
+    var bottom = panelDock() === 'bottom';
+    panel.classList.toggle('sq-panel-bottom', bottom);
+    document.body.classList.toggle('sq-panel-at-bottom', bottom);
+    var button = panel.querySelector('.sq-panel-dock');
+    button.textContent = panel.getAttribute(bottom ? 'data-t-right' : 'data-t-bottom');
+  }
+
+  function setDock(dock) {
+    dockMemo = dock;
+    try { window.localStorage.setItem(PANEL_DOCK_KEY, dock); } catch (e) { /* this page only */ }
+    var panel = document.getElementById('sq-panel');
+    if (panel) applyDock(panel);
+    relayout();
+  }
+
+  // The tallest the panel at the bottom may be: the table above it keeps its least height (MIN_SCROLLER_HEIGHT), so
+  // that the page still fits the window and does not scroll (what stands above and below the table is measured)
+  function maxPanelHeight() {
+    var limit = window.innerHeight - MIN_PANEL_H;
+    var scroller = document.querySelector('#sq-root .sq-scroller');
+    var panel = document.getElementById('sq-panel');
+    if (scroller && panel && !panel.hidden && panel.classList.contains('sq-panel-bottom')) {
+      var top = scroller.getBoundingClientRect().top + window.scrollY;
+      // below the table: the bottom padding of the content and Redmine's footer (not the page's own height, which
+      // Redmine stretches to the window)
+      var content = document.getElementById('content');
+      var footer = document.getElementById('footer');
+      var below = (content ? parseFloat(getComputedStyle(content).paddingBottom) || 0 : 0) + (footer ? footer.offsetHeight : 0) + 2;
+      limit = Math.min(limit, window.innerHeight - (top + MIN_SCROLLER_HEIGHT + below));
+    }
+    return Math.max(MIN_PANEL_H, limit);
+  }
+
+  function setPanelHeight(px) {
+    var h = Math.max(MIN_PANEL_H, Math.min(maxPanelHeight(), Math.round(px)));
+    document.documentElement.style.setProperty('--sq-panel-h', h + 'px');
+    return h;
+  }
+
+  // after the panel opens at the bottom or the window changes: a remembered height that no longer fits is cut down
+  function fitPanelHeight() {
+    var panel = document.getElementById('sq-panel');
+    if (!panel || panel.hidden || !panel.classList.contains('sq-panel-bottom')) return;
+    if (panel.offsetHeight > maxPanelHeight()) setPanelHeight(panel.offsetHeight);
+  }
+
+  function startPanelResize(event) {
+    var grip = event.currentTarget;
+    var panel = document.getElementById('sq-panel');
+    event.preventDefault();
+    var startY = event.clientY;
+    var startH = panel.offsetHeight;
+    var height = startH;
+    grip.classList.add('sq-active');
+    if (grip.setPointerCapture) grip.setPointerCapture(event.pointerId); // the iframe would swallow the moves otherwise
+    var move = function (e) { height = setPanelHeight(startH - (e.clientY - startY)); };
+    var done = function () {
+      grip.removeEventListener('pointermove', move);
+      grip.removeEventListener('pointerup', done);
+      grip.removeEventListener('pointercancel', done);
+      grip.classList.remove('sq-active');
+      try { window.localStorage.setItem(PANEL_HEIGHT_KEY, String(height)); } catch (e) { /* ignore */ }
+      relayout();
+    };
+    grip.addEventListener('pointermove', move);
+    grip.addEventListener('pointerup', done);
+    grip.addEventListener('pointercancel', done);
+  }
+
+  function relayout() { fitPanelHeight(); fitScrollers(); scheduleLightning(); } // the page got narrower or wider
 
   function isInline() { var r = document.getElementById('sq-root'); return !!(r && r.classList.contains('sq-inline')); }
 
   function openPanel(link) {
     if (isInline()) return false; // inside the issue page there is no side panel: links open in the page that holds the frame
+    closeFloat(); // the panel or the floating window, one at a time
     var panel = ensurePanel();
     if (!panel) return false;
     var url = link.getAttribute('href');
@@ -689,6 +844,9 @@
     }
     panel.hidden = false;
     document.body.classList.add('sq-panel-on');
+    applyDock(panel);
+    panelIssueId = issueIdOf(url);
+    markSelected();
     relayout();
     return true;
   }
@@ -697,10 +855,209 @@
     var panel = document.getElementById('sq-panel');
     if (!panel || panel.hidden) return;
     panel.hidden = true;
-    document.body.classList.remove('sq-panel-on');
+    document.body.classList.remove('sq-panel-on', 'sq-panel-at-bottom');
     panel.querySelector('iframe').src = 'about:blank';
     panelUrl = '';
+    panelIssueId = null;
+    markSelected();
     relayout();
+  }
+
+  // ---- the floating window -----------------------------------------
+  // A small window over the screen with the head of an issue, its attributes and its stage timeline with the
+  // adjusting (the issue page in a frame, sq_float=1 leaves the rest out). One at a time; its head drags it; the
+  // browser remembers where it stood. A double click on a bar opens it (the panel shows the whole issue page, so it
+  // has no button for it).
+  var floatIssueId = null;
+  var FLOAT_POS_KEY = 'sqFloatPos';
+
+  function ensureFloat() {
+    var win = document.getElementById('sq-float');
+    if (win) return win;
+    var template = document.getElementById('sq-float-template');
+    if (!template) return null;
+    document.body.appendChild(template.content.cloneNode(true));
+    win = document.getElementById('sq-float');
+    win.querySelector('.sq-float-close').addEventListener('click', closeFloat);
+    win.querySelector('.sq-float-panel').addEventListener('click', function () {
+      var a = win.querySelector('.sq-float-open');
+      var fake = document.createElement('a');
+      fake.setAttribute('href', a.getAttribute('href'));
+      fake.textContent = win.querySelector('.sq-float-title').textContent;
+      openPanel(fake);
+    });
+    win.querySelector('iframe').addEventListener('load', onFloatLoad);
+    win.querySelector('.sq-panel-prev').addEventListener('click', function () { stepPanel(-1); });
+    win.querySelector('.sq-panel-next').addEventListener('click', function () { stepPanel(1); });
+    win.querySelector('.sq-float-head').addEventListener('pointerdown', startFloatDrag);
+    var grip = win.querySelector('.sq-float-grip');
+    grip.addEventListener('pointerdown', startFloatResize);
+    grip.addEventListener('dblclick', function () { // back to the size that fits the issue
+      try { window.localStorage.removeItem(FLOAT_SIZE_KEY); } catch (e) { /* ignore */ }
+      win.style.width = '';
+      try { fitFloatHeight(win.querySelector('iframe').contentDocument); } catch (e) { /* not loaded yet */ }
+    });
+    return win;
+  }
+
+  function placeFloat(win, left, top) {
+    var maxLeft = Math.max(0, window.innerWidth - win.offsetWidth);
+    var maxTop = Math.max(0, window.innerHeight - 40);
+    win.style.left = Math.max(0, Math.min(maxLeft, Math.round(left))) + 'px';
+    win.style.top = Math.max(0, Math.min(maxTop, Math.round(top))) + 'px';
+  }
+
+  function openFloat(url, title) {
+    if (isInline() || !url) return false;
+    var win = ensureFloat();
+    if (!win) return false;
+    closePanel(); // one at a time
+    url = url.replace(/[?&]sq_(embed|float)=1/g, '');
+    win.querySelector('.sq-float-title').textContent = title || '';
+    win.querySelector('.sq-float-open').setAttribute('href', url);
+    win.querySelector('iframe').src = url + (url.indexOf('?') < 0 ? '?' : '&') + 'sq_embed=1&sq_float=1';
+    var first = win.hidden;
+    win.hidden = false;
+    var size = floatSize();
+    if (first && size) setFloatSize(win, size.w, size.h);
+    if (first) {
+      var pos = null;
+      try { pos = JSON.parse(window.localStorage.getItem(FLOAT_POS_KEY) || 'null'); } catch (e) { pos = null; }
+      if (pos) placeFloat(win, pos.left, pos.top);
+      else placeFloat(win, window.innerWidth - win.offsetWidth - 24, window.innerHeight - 420);
+    }
+    floatIssueId = issueIdOf(url);
+    markSelected();
+    return true;
+  }
+
+  function floatOpen() {
+    var win = document.getElementById('sq-float');
+    return !!(win && !win.hidden);
+  }
+
+  function closeFloat() {
+    var win = document.getElementById('sq-float');
+    if (!win || win.hidden) return;
+    win.hidden = true;
+    win.querySelector('iframe').src = 'about:blank';
+    floatIssueId = null;
+    markSelected();
+  }
+
+  // What the window loaded: its height follows the content; a saved issue (a notice) refreshes the screen; leaving
+  // the issue closes the window
+  function onFloatLoad(event) {
+    var frame = event.target;
+    var doc, path;
+    try {
+      if (frame.contentWindow.location.href === 'about:blank') return;
+      doc = frame.contentDocument;
+      path = frame.contentWindow.location.pathname;
+    } catch (e) { return; }
+    if (!doc) return;
+    if (!/\/issues\/\d+(\/|$)/.test(path)) { closeFloat(); refreshScreen(); return; }
+    if (!floatSize()) fitFloatHeight(doc); // a size the user dragged stays; otherwise the window fits this issue
+    var shownId = issueIdOf(path);
+    if (shownId && shownId !== floatIssueId) {
+      floatIssueId = shownId;
+      var win = document.getElementById('sq-float');
+      var subjectEl = doc.querySelector('.issue .subject h3');
+      win.querySelector('.sq-float-title').textContent = '#' + shownId + (subjectEl ? ' ' + subjectEl.textContent.trim() : '');
+      win.querySelector('.sq-float-open').setAttribute('href', path);
+      markSelected();
+    }
+    if (doc.getElementById('flash_notice')) refreshScreen();
+  }
+
+  // The size of the window: dragged at its lower right corner and remembered by the browser; a double click on the
+  // corner forgets it. Without one, the window fits the issue when it loads: everything down to two or three lines of
+  // the description (a longer description scrolls in its own box), up to 80% of the screen.
+  var FLOAT_SIZE_KEY = 'sqFloatSize', MIN_FLOAT_W = 420, MIN_FLOAT_H = 200;
+
+  function floatSize() {
+    try { return JSON.parse(window.localStorage.getItem(FLOAT_SIZE_KEY) || 'null'); } catch (e) { return null; }
+  }
+
+  function keepFloatOnScreen(win) { // its bottom and right edge stay on the screen
+    var overY = win.offsetTop + win.offsetHeight - window.innerHeight;
+    var overX = win.offsetLeft + win.offsetWidth - window.innerWidth;
+    if (overY > 0 || overX > 0) placeFloat(win, win.offsetLeft - Math.max(0, overX), win.offsetTop - Math.max(0, overY));
+  }
+
+  function setFloatSize(win, w, h) {
+    if (w) win.style.width = Math.max(MIN_FLOAT_W, Math.min(window.innerWidth - 16, Math.round(w))) + 'px';
+    win.style.height = Math.max(MIN_FLOAT_H, Math.min(window.innerHeight - 16, Math.round(h))) + 'px';
+    keepFloatOnScreen(win);
+  }
+
+  function fitFloatHeight(doc) {
+    var win = document.getElementById('sq-float');
+    var head = win.querySelector('.sq-float-head').offsetHeight;
+    var content = doc.getElementById('content');
+    var needed;
+    var wiki = doc.querySelector('#content > .issue > .description .wiki');
+    if (wiki) {
+      var style = doc.defaultView.getComputedStyle(wiki);
+      var line = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.5 || 18;
+      needed = wiki.getBoundingClientRect().top + content.scrollTop + line * 3;
+      // what stands under the description (the attachments) and the padding at the bottom
+      Array.prototype.forEach.call(doc.querySelectorAll('#content > .issue > .description ~ *'), function (el) {
+        if (el.id !== 'sq-stage-timeline' && doc.defaultView.getComputedStyle(el).display !== 'none') needed += el.offsetHeight;
+      });
+      needed += 24;
+    } else { // as tall as what the issue shows (the content itself is stretched to the window)
+      needed = 0;
+      Array.prototype.forEach.call(doc.querySelectorAll('#content > .issue > *, #content > .flash'), function (el) {
+        if (doc.defaultView.getComputedStyle(el).display !== 'none') needed = Math.max(needed, el.getBoundingClientRect().bottom + content.scrollTop);
+      });
+      needed += 24;
+    }
+    setFloatSize(win, null, head + Math.min(needed, window.innerHeight * 0.8));
+  }
+
+  function startFloatResize(event) {
+    var win = document.getElementById('sq-float');
+    var grip = event.currentTarget;
+    event.preventDefault();
+    event.stopPropagation();
+    var startX = event.clientX, startY = event.clientY;
+    var startW = win.offsetWidth, startH = win.offsetHeight;
+    grip.classList.add('sq-active');
+    if (grip.setPointerCapture) grip.setPointerCapture(event.pointerId);
+    var move = function (e) { setFloatSize(win, startW + e.clientX - startX, startH + e.clientY - startY); };
+    var done = function () {
+      grip.removeEventListener('pointermove', move);
+      grip.removeEventListener('pointerup', done);
+      grip.removeEventListener('pointercancel', done);
+      grip.classList.remove('sq-active');
+      try { window.localStorage.setItem(FLOAT_SIZE_KEY, JSON.stringify({ w: win.offsetWidth, h: win.offsetHeight })); } catch (e) { /* ignore */ }
+    };
+    grip.addEventListener('pointermove', move);
+    grip.addEventListener('pointerup', done);
+    grip.addEventListener('pointercancel', done);
+  }
+
+  function startFloatDrag(event) {
+    if (event.target.closest('button, a')) return;
+    var win = document.getElementById('sq-float');
+    var head = event.currentTarget;
+    event.preventDefault();
+    var startX = event.clientX, startY = event.clientY;
+    var startLeft = win.offsetLeft, startTop = win.offsetTop;
+    head.classList.add('sq-active');
+    if (head.setPointerCapture) head.setPointerCapture(event.pointerId); // the frame would swallow the moves otherwise
+    var move = function (e) { placeFloat(win, startLeft + e.clientX - startX, startTop + e.clientY - startY); };
+    var done = function () {
+      head.removeEventListener('pointermove', move);
+      head.removeEventListener('pointerup', done);
+      head.removeEventListener('pointercancel', done);
+      head.classList.remove('sq-active');
+      try { window.localStorage.setItem(FLOAT_POS_KEY, JSON.stringify({ left: win.offsetLeft, top: win.offsetTop })); } catch (e) { /* ignore */ }
+    };
+    head.addEventListener('pointermove', move);
+    head.addEventListener('pointerup', done);
+    head.addEventListener('pointercancel', done);
   }
 
   // What the iframe loaded: a saved issue comes back with a notice; leaving the issue (deleted, a list) closes the panel
@@ -714,6 +1071,19 @@
     } catch (e) { return; }
     if (!doc) return;
     if (!/\/issues\/\d+(\/|$)/.test(path)) { closePanel(); refreshScreen(); return; }
+    // another issue opened inside the panel (its "next" link, a related issue): the mark follows it
+    var shownId = issueIdOf(path);
+    if (shownId && shownId !== panelIssueId) {
+      panelIssueId = shownId;
+      var panel = document.getElementById('sq-panel');
+      var rowLink = document.querySelector('#sq-root tr.sq-row[data-id="' + shownId + '"] a.sq-subj');
+      var subjectEl = doc.querySelector('.issue .subject h3');
+      panel.querySelector('.sq-panel-title').textContent = rowLink ? rowLink.textContent.trim()
+        : '#' + shownId + (subjectEl ? ' ' + subjectEl.textContent.trim() : '');
+      panelUrl = path;
+      panel.querySelector('.sq-panel-open').setAttribute('href', path);
+      markSelected();
+    }
     if (doc.getElementById('flash_notice')) refreshScreen();
   }
 
@@ -778,6 +1148,7 @@
         config = null; // the dates of the lightning line may have changed
         initScreen(true);
         restoreState(state);
+        markSelected();
       })
       .catch(function () { window.location.reload(); })
       .then(function () {
@@ -1075,7 +1446,19 @@
   }
 
   document.addEventListener('keydown', function (event) {
-    if (event.key === 'Escape') closePanel();
+    if (event.key === 'Escape') { closePanel(); closeFloat(); }
+  });
+
+  var barClickTimer = null, DOUBLE_CLICK_WAIT = 250;
+
+  document.addEventListener('dblclick', function (event) {
+    var bar = event.target.closest && event.target.closest('#sq-root .sq-bar');
+    if (!bar || isInline() || event.target.closest('#sq-root.sq-adjust')) return;
+    var link = bar.closest('tr').querySelector('a.sq-subj');
+    if (!link) return;
+    clearTimeout(barClickTimer);
+    event.preventDefault();
+    openFloat(link.getAttribute('href'), link.textContent.trim());
   });
 
   document.addEventListener('click', function (event) {
@@ -1120,6 +1503,11 @@
       return;
     }
     var subject = target.closest('a.sq-subj');
+    // while the floating window is open, a click shows the issue in it instead of opening the panel
+    if (subject && isPlainClick(event) && floatOpen() && openFloat(subject.getAttribute('href'), subject.textContent.trim())) {
+      event.preventDefault();
+      return;
+    }
     if (subject && isPlainClick(event) && openPanel(subject)) { // Ctrl, Shift and the middle button keep the old way
       event.preventDefault();
       return;
@@ -1128,7 +1516,13 @@
     if (bar && target.closest('#sq-root.sq-adjust')) return; // in the adjust mode a bar is dragged, not opened
     if (bar) {
       var link = bar.closest('tr').querySelector('a.sq-subj');
-      if (link && !openPanel(link)) (isInline() ? window.parent : window).location = link.href;
+      if (!link) return;
+      if (isInline()) { window.parent.location = link.href; return; }
+      clearTimeout(barClickTimer);
+      if (floatOpen()) { openFloat(link.getAttribute('href'), link.textContent.trim()); return; } // the window shows it at once
+      // a double click on a bar opens the floating window: the single click waits for it a moment
+      if (event.detail > 1) return;
+      barClickTimer = setTimeout(function () { if (!openPanel(link)) window.location = link.href; }, DOUBLE_CLICK_WAIT);
       return;
     }
     var groupRow = target.closest('tr.group-header-row');
@@ -1189,6 +1583,6 @@
   window.addEventListener('load', function () { fitScrollers(); scheduleLightning(); });
   window.addEventListener('resize', function () {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(function () { fitScrollers(); scheduleLightning(); }, 100);
+    resizeTimer = setTimeout(function () { fitPanelHeight(); fitScrollers(); scheduleLightning(); }, 100);
   });
 })();

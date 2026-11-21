@@ -4,7 +4,7 @@ A Redmine plugin that keeps one issue as one issue and shows the **plan and the 
 
 [日本語](README.md)
 
-> **Status**: v0.9.1 (2026-11-17). The author is still trying it out in daily use (dogfooding).
+> **Status**: v0.10.0 (2026-11-21). The author is still trying it out in daily use (dogfooding).
 
 ![Timeline](docs/images/timeline.en.png)
 
@@ -48,11 +48,11 @@ cd <Redmine>/plugins
 unzip redmine_sequential_tasks-<version>.zip          # creates plugins/redmine_sequential_tasks/
 ```
 
-**With git clone**: the main branch of this repository is updated only at releases. To install a given version, name its tag (the images of the manual and the git history come along, about 50 MB; the zip is 260 KB).
+**With git clone**: the main branch of this repository is updated only at releases. To install a given version, name its tag (the images of the manual and the git history come along, about 50 MB; the zip is 310 KB).
 
 ```sh
 cd <Redmine>/plugins
-git clone --branch v0.9.1 https://github.com/yoohey/redmine_sequential_tasks.git    # keep the folder name redmine_sequential_tasks
+git clone --branch v0.10.0 https://github.com/yoohey/redmine_sequential_tasks.git    # keep the folder name redmine_sequential_tasks
 ```
 
 After either of them, run the following and restart Redmine.
@@ -66,7 +66,7 @@ bundle exec rake redmine:plugins:migrate RAILS_ENV=production
 
 ```sh
 mkdir -p plugins
-git clone --branch v0.9.1 https://github.com/yoohey/redmine_sequential_tasks.git plugins/redmine_sequential_tasks
+git clone --branch v0.10.0 https://github.com/yoohey/redmine_sequential_tasks.git plugins/redmine_sequential_tasks
 ```
 
 ```yaml

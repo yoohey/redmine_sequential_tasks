@@ -27,6 +27,7 @@
     <% if @milestones.any? { |m| m[:kind] == :version } %><span><i class="sq-lg-d sq-ms-version"></i> <%= l('sequential_tasks.toolbar.legend_version') %></span><% end %>
     <% if @milestones.any? { |m| m[:kind] == :issue } %><span><i class="sq-lg-d sq-ms-issue"></i> <%= l('sequential_tasks.toolbar.legend_event') %></span><% end %>
   </div>
+  <%= sq_as_of %>
 </div>
 
 <div class="sq-tb">

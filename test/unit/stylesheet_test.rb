@@ -23,6 +23,21 @@ class StylesheetTest < Minitest::Test
     assert_match(/\.sq-bar-future \{[^}]*dashed/, CSS, 'a coming stage stays dashed')
   end
 
+  # the row of the issue open in the panel stands out, in the frozen cells too (they paint their own background)
+  def test_the_row_of_the_issue_in_the_panel_is_marked
+    assert_match(/background-color: #\h{6}/, declarations('tr.sq-row.sq-selected > td '))
+    assert_match(/background: #\h{6}/, declarations('tr.sq-row.sq-selected > td.sq-sticky'))
+  end
+
+  # only the plugin's own screens leave out Redmine's footer (the stylesheet is on the issue page too)
+  def test_the_footer_is_left_out_on_the_plugins_screens_only
+    rule = CSS[/^[^{}\n]*#footer[^{}\n]*\{[^}]*display: none[^}]*\}/]
+    assert rule, 'a rule hides the footer'
+    assert_match(/body\.controller-sequential_tasks #footer/, rule)
+    assert_match(/body\.controller-sequential_task_analysis #footer/, rule)
+    refute_match(/(^|,)\s*#footer/, rule, 'never on every screen')
+  end
+
   def test_the_scroller_scrolls_in_both_directions
     body = declarations('.sq-scroller')
     assert_match(/overflow: auto/, body)

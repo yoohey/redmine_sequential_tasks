@@ -152,15 +152,15 @@ Put it in Redmine's `plugins/` folder under the name `redmine_sequential_tasks`.
 ```bash
 cd /path/to/redmine/plugins
 # unpack the release zip (check that the folder is named redmine_sequential_tasks)
-unzip redmine_sequential_tasks-0.9.1.zip
+unzip redmine_sequential_tasks-0.10.0.zip
 ls -la redmine_sequential_tasks
 ```
 
-**With git clone**: the main branch of the public repository is updated only at releases. To install a given version, name its tag (`v0.9.1`, etc.). The images of the manual and the git history come along, about 50 MB (the zip is 260 KB).
+**With git clone**: the main branch of the public repository is updated only at releases. To install a given version, name its tag (`v0.10.0`, etc.). The images of the manual and the git history come along, about 50 MB (the zip is 310 KB).
 
 ```bash
 cd /path/to/redmine/plugins
-git clone --branch v0.9.1 https://github.com/yoohey/redmine_sequential_tasks.git
+git clone --branch v0.10.0 https://github.com/yoohey/redmine_sequential_tasks.git
 ls -la redmine_sequential_tasks
 ```
 
@@ -168,7 +168,7 @@ ls -la redmine_sequential_tasks
 
 ```bash
 mkdir -p plugins
-git clone --branch v0.9.1 https://github.com/yoohey/redmine_sequential_tasks.git plugins/redmine_sequential_tasks
+git clone --branch v0.10.0 https://github.com/yoohey/redmine_sequential_tasks.git plugins/redmine_sequential_tasks
 ```
 
 ```yaml
@@ -529,6 +529,8 @@ From the timeline or the issue page, a branched task can be created with one cli
 3. Check or edit the subject (to save typing, `parent subject_1` or the like is suggested by default).
 4. Press **"Create branched task"** and the branched task is created on the spot, linked to the parent.
 
+A branched task starts today. But when the parent starts later than today (an issue that has not started yet and is planned to begin next week, for example), it starts on the parent's start date. The timeline shows that date to the right of the input row. On the issue page, the start date field of the form has that date filled in, and you can change it.
+
 ![Pressing "＋🌿" on the timeline opens the form for a branched task just below the parent](images/manual/en/4-1-branch-form.png)
 *Screen 4-1: Pressing "＋🌿" on the timeline opens the form for a branched task just below the parent*
 
@@ -741,7 +743,7 @@ The "State" column among the fixed columns on the left shows the progress and he
 | **`▲ Ahead`** (ahead) | An issue that has moved on to a stage beyond the one planned for today. On days that fall in no stage's planned period, such as weekends, it is compared with the stage planned for the last working day before. |
 | **`In progress`** (in_progress) | An issue neither late nor ahead, working on schedule on the stage it should be in today. |
 
-  An issue in a status that is not defined as a stage shows **`⚑ status name`** under its badge, so that you can see at a glance that it is stopped outside the stages.
+  An issue in a status that is not defined as a stage shows **`⚑ status name`** under its badge, so that you can see at a glance that it is stopped outside the stages. Adjusting the plan (dragging or typing the days) usually covers the current stage and the later ones. An issue in a status that is not a stage (e.g. a "New" not used as a stage) before any stage has started can be adjusted from the first stage, start date included. An issue that went on to such a status after some stages started cannot be adjusted, since how far it got is not known.
 
 - **The switches for finished and not-started issues**:
   Once the plugin is in regular use, finished issues and issues far in the future pile up, and the timeline grows long and hard to see through. The toolbar therefore has these switches.
@@ -799,6 +801,18 @@ For when you "want to read the details of an issue while looking at the timeline
   In the side panel you can do exactly what you do on the usual issue page: change the status, change the assignee, post a note, and so on.
 - **Follows without a reload**:
   Press "Submit" in the side panel, and the timeline behind it is told about the update and redraws the stage bars of that issue and the lightning line right away. There is no need to reload the whole page.
+- **A small window with the schedule only (on trial)**:
+  **Double-click** a bar of stages, and a small window floats over the table with the subject, status, priority, assignee, version, start date, due date, done ratio and estimated time of the issue, and its stage timeline (with adjusting the plan and creating a branch), then the description, the attachments, the subtasks and the related issues (the yellow box of the issue page, without the small timeline of "This issue and its branches"). **"↑ Up"** and **"↓ Down"** in its head change it to the issue one row up or down in the table. Drag its head to move it; the browser remembers where it stood. Drag its lower right corner to change its size, which is remembered too (a double click on the corner goes back to the size that fits the issue). Until you change the size, it opens tall enough for two or three lines of the description, and a long description scrolls in its own box. There is one window: while it is open, a single click on a subject or a bar shows that issue in it (the panel does not open). The window and the panel are one at a time; **"◨ Open in the panel"** in the window moves the issue to the panel. When the plan is saved in the window, the window stays and the table is read again. A single click on a bar waits a moment (0.25 s) before the panel opens, to tell it from a double click.
+- **The issue above and below**:
+  **"↑ Up"** and **"↓ Down"** in the head of the panel move to the issue one row up or down in the table. The order is the order of the rows on the screen (its sorting, filters, groups and folded branches; rows that are not shown are skipped), and when the row is out of view, the table scrolls by one row (up or down alike). Redmine's own "« Previous | Next »" on the issue page follow the issue numbers, so the panel does not show them.
+- **The row of the open issue**:
+  The row of the issue open in the panel gets a light blue background and a blue line at the left of its issue cell. When you move to another issue inside the panel, the mark moves to its row. Closing the panel takes it away.
+- **Right or bottom**:
+  Press **"⬓ To the bottom"** in the head of the panel, and the panel moves to the bottom of the screen, across the whole width (you can read the issue and keep the timeline as wide as it is). At the bottom, **"◨ To the right"** brings it back. The height of the panel at the bottom is changed by dragging its top edge (as far as the table keeps a least height). The position (right or bottom) and the height are remembered in this browser, so the panel opens the same way next time (other PCs and people are not affected).
+
+  ![The panel at the bottom: the timeline above (the row of the open issue in light blue), the issue page below](images/manual/en/5-4-bottom-panel.png)
+  *Screen 5-4-2: The panel at the bottom: the timeline above (the row of the open issue in light blue), the issue page below*
+
 - **Opening and closing**:
   Close it with the "✕" button at the top right of the panel, by clicking outside the panel, or just by pressing `Esc`.
 
@@ -1003,6 +1017,8 @@ For such cases, the standard days can be overridden per project, without creatin
 ### 9.2 Full view and print layout
 
 For report materials and paper handouts, two display modes are provided.
+
+At the top right of the timeline, matrix and analysis screens (right of the legend), the moment the page was opened is shown, like "As of 11/21/2026 02:05 PM (UTC+09:00)", so that a screenshot or a print tells which moment it shows. The date and time follow Redmine's date and time formats and the time zone of your preferences. It stays at the moment the page was opened, even if the page is left open (so do the bars and the lightning line).
 
 - **Full view**:
   Tick **"▭ Full view"** in the timeline toolbar, and the scroll frame of the table (the fixed frame) is removed so that all rows and the whole period are laid out on one page. Together with the browser's zoom (zooming out), it lets you take a clean panoramic screenshot of the whole project.

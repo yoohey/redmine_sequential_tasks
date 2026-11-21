@@ -66,6 +66,7 @@ ja:
       reorder_mode: "並べ替え"
       reorder_mode_title: "オンの間だけ、持ち手（⠿）をドラッグして並べ替えられます。ページを開くたびにオフに戻ります"
       legend_done: "完了"
+      as_of: "%{time} 時点"
       legend_in_progress: "進行中"
       legend_planned: "予定"
       legend_delayed: "遅延中"
@@ -206,6 +207,18 @@ ja:
       open_page: "ページで開く"
       close: "閉じる（Esc）"
       frame_title: "チケット"
+      dock_bottom: "⬓ 下に出す"
+      dock_right: "◨ 右に出す"
+      resize: "ドラッグで高さを変えます"
+      prev: "上"
+      next: "下"
+      prev_title: "表で1つ上のチケット"
+      next_title: "表で1つ下のチケット"
+
+    float:
+      to_panel: "パネルで開く"
+      drag: "ドラッグで動かせます"
+      resize: "ドラッグで大きさを変えます（ダブルクリックで、チケットに合わせた大きさに戻します）"
 
     csv:
       parent: "派生元"
@@ -285,9 +298,9 @@ ja:
       start_locked_workflow: "ワークフローの設定で、開始日を変えられません"
       save: "変更を保存（履歴に記録）"
       mode_fixed_due: "期日優先"
-      mode_fixed_due_hint: "期日は動かさず、動かした境目の両隣の工程で日数をやり取りします"
+      mode_fixed_due_hint: "期日は動かさず、動かした境目の両隣の工程で日数をやり取りします。"
       mode_push: "日数優先"
-      mode_push_hint: "各工程の日数を守り、後ろの工程と期日をずらします"
+      mode_push_hint: "各工程の日数を守り、後ろの工程と期日をずらします。"
       cannot_fit_hint: "この期日には収まりません"
       drag_hint: "ドラッグして期間を調整"
       drag_bar_hint: "上のステージタイムラインの、工程の境目をドラッグするか日数を変えると、自動で計算します。「変更を保存」を押すまで保存されません。"

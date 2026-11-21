@@ -20,7 +20,7 @@ class SequentialTaskBranchesController < ApplicationController
     child_issue.safe_attributes = {
       'subject' => params[:subject].presence || "#{@parent_issue.subject}_#{branch_index}",
       'assigned_to_id' => (params[:assigned_to_id].presence || @parent_issue.assigned_to_id).to_s,
-      'start_date' => (params[:start_date].presence || User.current.today).to_s,
+      'start_date' => (params[:start_date].presence || SequentialTaskIssue.default_start_date(@parent_issue)).to_s,
       'is_private' => @parent_issue.is_private? ? '1' : '0'
     } # for User.current (a setter takes one argument)
     # A role that may not set "private" drops it silently: a private parent still gives a private child, since its

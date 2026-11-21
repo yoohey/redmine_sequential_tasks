@@ -26,6 +26,17 @@ module RedmineSequentialTasks
       @delay_days = compute_delay_days
     end
 
+    # Where a change of the plan may start (the stages from it on can be moved). Usually the current stage. An issue in
+    # a status without a stage (e.g. a "New" that is not one of the stages) before any stage has started has no current
+    # stage; its plan can still be moved from the first stage, since nothing has been done yet. An issue that went on to
+    # such a status after some stages started stays without one: how far it got is not known.
+    def schedule_anchor
+      return @current_stage if @current_stage
+      return nil if @stages.empty?
+
+      @stages.first if @stages.all? { |s| s.stage_status == 'pending' }
+    end
+
     # :closed, :delayed, :pending, :ahead or :in_progress (checked in this order)
     def state
       return :closed if closed?

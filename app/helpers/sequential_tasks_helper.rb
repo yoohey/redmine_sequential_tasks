@@ -123,6 +123,15 @@ module SequentialTasksHelper
     html.html_safe
   end
 
+  # When the page was made, at the top right, so that a screenshot tells which moment it shows: the date and time in the
+  # user's formats and time zone, with the offset of the zone (the bars and the lightning line are of that moment too)
+  def sq_as_of(now = Time.now)
+    zone = User.current.time_zone || Time.zone
+    offset = now.in_time_zone(zone).formatted_offset
+    text = l('sequential_tasks.toolbar.as_of', time: "#{format_time(now)} (UTC#{offset})")
+    content_tag(:span, text, class: 'sq-asof', title: zone.tzinfo.name)
+  end
+
   # The switch between the screens of the project: timeline, matrix and analysis. list_path - how a link of the
   # timeline or the matrix is built (keeping the settings of the page), or nil on the analysis screen
   def sq_view_switch(project, current, list_path = nil)

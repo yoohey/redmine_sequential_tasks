@@ -37,6 +37,11 @@ class SequentialTaskAnalysisControllerTest < Redmine::ControllerTest
     @issues.each { |i| visit(i, 2, 1, 1) }  # stage 2: one day each (3 planned days)
   end
 
+  def test_the_title_row_shows_when_the_page_was_made
+    index
+    assert_select '.sq-top .sq-asof', text: /UTC[+-]\d{2}:\d{2}/
+  end
+
   def test_the_table_of_a_tracker_has_a_row_per_stage_with_its_figures
     history
     index

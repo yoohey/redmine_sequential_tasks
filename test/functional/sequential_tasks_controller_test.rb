@@ -142,6 +142,22 @@ class SequentialTasksControllerTest < Redmine::ControllerTest
     assert_equal 0, css_select('#lightning-svg[style*="z-index"]').size, 'the layer order lives in the stylesheet'
   end
 
+  def test_a_row_that_starts_later_carries_the_start_date_its_branch_will_get
+    index
+    full = RedmineSequentialTasks::DateFormat.full(@pending.start_date)
+    assert_select "tr[data-id='#{@pending.id}'][data-bs='#{full}']"
+    assert_select "tr[data-id='#{@active.id}'][data-bs]", 0, 'a started task gives a branch that starts today'
+    assert_select "template#sq-branch-template[data-note*='@@D@@'][data-today='#{RedmineSequentialTasks::DateFormat.full(Date.today)}']"
+  end
+
+  def test_the_title_row_shows_when_the_page_was_made_in_the_users_time_zone
+    User.find(2).pref.update!(time_zone: 'Tokyo')
+    %w[timeline matrix].each do |view|
+      index(view: view)
+      assert_select '.sq-top .sq-legend + .sq-asof[title="Asia/Tokyo"]', text: /\(UTC\+09:00\)/
+    end
+  end
+
   def test_the_branch_template_is_only_for_users_who_may_add_issues
     @request.session[:user_id] = nil
     index
@@ -243,6 +259,13 @@ class SequentialTasksControllerTest < Redmine::ControllerTest
     stages = @active.issue_stages.order(:position).to_a
     assert_select "tr.issue-row[data-id='#{@active.id}'][data-adj^='#{stages.first.id}:'][data-due][data-start-ok='1']"
     assert_select "tr.issue-row[data-id='#{@active.id}'] .sq-bar[data-sid='#{stages.first.id}']"
+  end
+
+  def test_a_status_without_a_stage_before_anything_started_can_be_dragged
+    outside = Issue.generate!(project_id: 1, tracker_id: 1, status_id: 4, subject: 'in feedback, nothing started')
+    index
+    first = outside.issue_stages.order(:position).first
+    assert_select "tr.issue-row[data-id='#{outside.id}'][data-adj^='#{first.id}:'][data-start-ok='1']"
   end
 
   def test_no_adjust_mode_without_the_right_to_edit_issues

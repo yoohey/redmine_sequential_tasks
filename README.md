@@ -4,7 +4,7 @@ Redmine のチケット1枚のまま、「受付 → 原因解析 → 対策 →
 
 [English](README.en.md)
 
-> **状況**: v0.9.1（2026-11-17）。作者が自分で使いながら確かめている段階（ドッグフーディング）です。
+> **状況**: v0.10.0（2026-11-21）。作者が自分で使いながら確かめている段階（ドッグフーディング）です。
 
 ![タイムライン](docs/images/timeline.png)
 
@@ -48,11 +48,11 @@ cd <Redmine>/plugins
 unzip redmine_sequential_tasks-<版>.zip          # plugins/redmine_sequential_tasks/ ができる
 ```
 
-**git clone で**: このリポジトリの main は、リリースのときだけ更新します。版を決めて入れるなら、タグを指定します（マニュアルの画像と git の履歴も入るので、50MB ほどになります。zip は 260KB）。
+**git clone で**: このリポジトリの main は、リリースのときだけ更新します。版を決めて入れるなら、タグを指定します（マニュアルの画像と git の履歴も入るので、50MB ほどになります。zip は 310KB）。
 
 ```sh
 cd <Redmine>/plugins
-git clone --branch v0.9.1 https://github.com/yoohey/redmine_sequential_tasks.git    # フォルダ名は redmine_sequential_tasks のまま
+git clone --branch v0.10.0 https://github.com/yoohey/redmine_sequential_tasks.git    # フォルダ名は redmine_sequential_tasks のまま
 ```
 
 zip・git clone のどちらのあとも、次を流して Redmine を再起動します。
@@ -66,7 +66,7 @@ bundle exec rake redmine:plugins:migrate RAILS_ENV=production
 
 ```sh
 mkdir -p plugins
-git clone --branch v0.9.1 https://github.com/yoohey/redmine_sequential_tasks.git plugins/redmine_sequential_tasks
+git clone --branch v0.10.0 https://github.com/yoohey/redmine_sequential_tasks.git plugins/redmine_sequential_tasks
 ```
 
 ```yaml

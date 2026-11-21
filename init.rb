@@ -2,7 +2,7 @@ Redmine::Plugin.register :redmine_sequential_tasks do
   name 'Redmine Sequential Tasks Plugin'
   author 'yoohey'
   description 'Visualizes and manages multi-stage sequential tasks with stage timelines and progress tracking.'
-  version '0.9.1'
+  version '0.10.0'
   url 'https://github.com/yoohey/redmine_sequential_tasks'
   author_url 'https://github.com/yoohey'
 

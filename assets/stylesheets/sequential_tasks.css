@@ -19,6 +19,9 @@
 #sq-root .sq-scroller { overflow: auto; position: relative; max-width: 100%; max-height: 70vh; }
 /* the table runs down to Redmine's footer: no padding under it on these screens */
 #content:has(#sq-root) { padding-bottom: 0; }
+/* the screens of the plugin (timeline, matrix, analysis) leave out Redmine's footer, so the table gets that height
+   too (2026-11-21, the user's choice); every other screen of Redmine keeps it */
+body.controller-sequential_tasks #footer, body.controller-sequential_task_analysis #footer { display: none; }
 
 /* ---- header cells (the lines between cells are set per table: see "vertical lines" below) */
 #sq-root th.sq-th-issue, #sq-root th.sq-th-state, #sq-root th.sq-th-slot { box-sizing: border-box; color: #475569; background: #f8fafc; }
@@ -98,6 +101,10 @@
 #sq-root .sq-mx td.sq-sticky { z-index: 5; }
 #sq-root .sq-mx tbody tr.sq-row:nth-child(even) > td.sq-sticky { background: #fcfcfd; }
 #sq-root .sq-row:hover > td.sq-sticky { background: #f8fafc; }
+/* the row of the issue open in the panel: a light blue row, with a blue bar at the left of its issue cell */
+#sq-root tr.sq-row.sq-selected > td { background-color: #eff6ff; }
+#sq-root tr.sq-row.sq-selected > td.sq-sticky { background: #dbeafe; }
+#sq-root tr.sq-row.sq-selected > td.sq-c-issue { box-shadow: inset 3px 0 0 #2563eb, inset -1px 0 0 #e2e8f0; }
 #sq-root td.sq-c-issue { left: 0; padding: 4px 8px; }
 #sq-root td.sq-c-state { left: var(--sq-issue-w); padding: 2px 4px; text-align: center; }
 #sq-root td.sq-track { position: relative; padding: 0; vertical-align: middle; height: 34px; box-sizing: border-box; }
@@ -270,6 +277,9 @@ select.sq-select:hover { border-color: #93c5fd; }
 #sq-adj-tip.sq-adj-tip-bad { background: #dc2626; }
 .sq-legend { margin-left: auto; display: inline-flex; align-items: center; gap: 10px; font-size: 11px; color: #475569; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 3px 8px; }
 .sq-legend span { display: inline-flex; align-items: center; gap: 4px; }
+/* when the page was made (for screenshots): at the right end of the title row */
+.sq-asof { margin-left: auto; font-size: 11px; color: #475569; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.sq-legend + .sq-asof { margin-left: 8px; }
 .sq-lg { display: inline-block; width: 12px; height: 10px; border-radius: 2px; }
 .sq-lg-done { background: #15803d; }
 .sq-lg-cur { background: #0284c7; border: 1.5px solid #ffffff; box-shadow: 0 0 2px rgba(0,0,0,0.5); }
@@ -325,7 +335,7 @@ table.sq-an td.sq-an-slow:not(:empty) { color: #b45309; }
   @page { size: landscape; margin: 8mm; }
   /* Redmine's frame and the controls are left out; the title and the legend stay */
   #sq-panel { display: none !important; }
-  body.sq-panel-on { padding-right: 0 !important; }
+  body.sq-panel-on { padding-right: 0 !important; padding-bottom: 0 !important; }
   #header, #top-menu, #main-menu, #sidebar, #footer, .sq-tb, .sq-seg, .sq-field, .sq-mode-btn, .sq-adjust-btn, .sq-adjust-bar, .sq-hd, .sq-rz, a.sq-plus, .sq-fold { display: none !important; }
   #main { margin: 0; }
   #content { width: 100% !important; padding: 0 !important; float: none; }
@@ -350,7 +360,50 @@ table.sq-an td.sq-an-slow:not(:empty) { color: #b45309; }
 #sq-panel .sq-panel-close { border: 0; background: transparent; font-size: 20px; line-height: 1; cursor: pointer; color: #475569; padding: 0 4px; }
 #sq-panel .sq-panel-close:hover { color: #b91c1c; }
 #sq-panel .sq-panel-frame { flex: 1; width: 100%; border: 0; background: #fff; }
-body.sq-panel-on { padding-right: var(--sq-panel-w); min-width: 0; } /* Redmine gives <body> a minimum width of 900px: with the panel the page would grow wider than the window */
+body.sq-panel-on { padding-right: var(--sq-panel-w); min-width: 0; }
+/* the panel at the bottom (the button in its head switches; the browser remembers it): the whole width, as tall as
+   --sq-panel-h (dragged at its top edge, remembered too), and the page leaves that much room below */
+:root { --sq-panel-h: 40vh; }
+#sq-panel.sq-panel-bottom { top: auto; left: 0; width: auto; height: var(--sq-panel-h); border-left: 0; border-top: 1px solid #cbd5e1; box-shadow: 0 -4px 14px rgba(15, 23, 42, 0.16); }
+body.sq-panel-on.sq-panel-at-bottom { padding-right: 0; padding-bottom: var(--sq-panel-h); }
+/* Redmine makes the page (<body>, #wrapper) at least as tall as the window: with the room below for the panel the page would
+   be taller than the window and scroll into an empty band; the page fits the window above the panel instead */
+body.sq-panel-on.sq-panel-at-bottom #wrapper { min-height: calc(100vh - var(--sq-panel-h)); }
+body.sq-panel-on.sq-panel-at-bottom { box-sizing: border-box; } /* <body> is as tall as the window: the room is inside it */
+#sq-panel .sq-panel-grip { display: none; }
+#sq-panel.sq-panel-bottom .sq-panel-grip { display: block; position: absolute; top: -4px; left: 0; right: 0; height: 8px; cursor: row-resize; z-index: 1; touch-action: none; }
+#sq-panel.sq-panel-bottom .sq-panel-grip:hover, #sq-panel .sq-panel-grip.sq-active { background: rgba(37, 99, 235, 0.35); }
+#sq-panel .sq-panel-dock { white-space: nowrap; font-size: 11px; border: 1px solid #cbd5e1; background: #fff; border-radius: 4px; padding: 1px 8px; cursor: pointer; color: #334155; }
+#sq-panel .sq-panel-dock:hover { background: #eff6ff; border-color: #93c5fd; }
+/* the floating window: over the screen, its head drags it, its frame as tall as its content (up to 80% of the window) */
+#sq-float { position: fixed; z-index: 1001; width: min(1100px, calc(100vw - 32px)); display: flex; flex-direction: column; background: #fff; border: 1px solid #94a3b8; border-radius: 8px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.28); overflow: hidden; }
+#sq-float[hidden] { display: none; }
+#sq-float .sq-float-head { display: flex; align-items: center; gap: 10px; padding: 6px 10px; background: #f1f5f9; border-bottom: 1px solid #cbd5e1; font-size: 12px; cursor: move; touch-action: none; user-select: none; }
+#sq-float .sq-float-head.sq-active { background: #e2e8f0; }
+#sq-float .sq-float-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: bold; color: #1e293b; }
+#sq-float .sq-float-panel { white-space: nowrap; font-size: 11px; border: 1px solid #cbd5e1; background: #fff; border-radius: 4px; padding: 1px 8px; cursor: pointer; color: #334155; }
+#sq-float .sq-float-open { white-space: nowrap; font-size: 11px; text-decoration: none; }
+#sq-float .sq-float-close { border: 0; background: transparent; font-size: 20px; line-height: 1; cursor: pointer; color: #475569; padding: 0 4px; }
+#sq-float .sq-float-close:hover { color: #b91c1c; }
+#sq-float { height: 360px; }
+#sq-float .sq-float-frame { width: 100%; flex: 1 1 auto; min-height: 0; border: 0; background: #fff; }
+/* the lower right corner drags the size */
+#sq-float .sq-float-grip { position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize; touch-action: none;
+  background: linear-gradient(135deg, transparent 0 50%, #94a3b8 50% 58%, transparent 58% 70%, #94a3b8 70% 78%, transparent 78%); }
+#sq-float .sq-float-grip:hover, #sq-float .sq-float-grip.sq-active { background-color: rgba(37, 99, 235, 0.15); }
+@media print { #sq-float { display: none !important; } }
+#sq-panel .sq-panel-step { display: inline-flex; white-space: nowrap; }
+#sq-panel .sq-panel-step button { font-size: 11px; border: 1px solid #cbd5e1; background: #fff; padding: 1px 8px; cursor: pointer; color: #334155; }
+#sq-panel .sq-panel-step button:first-child { border-radius: 4px 0 0 4px; }
+#sq-panel .sq-panel-step button + button { border-left: 0; border-radius: 0 4px 4px 0; }
+#sq-panel .sq-panel-step button:hover:not(:disabled) { background: #eff6ff; }
+#sq-panel .sq-panel-step button:disabled { color: #cbd5e1; cursor: default; } /* Redmine gives <body> a minimum width of 900px: with the panel the page would grow wider than the window */
+#sq-float .sq-panel-step { display: inline-flex; white-space: nowrap; }
+#sq-float .sq-panel-step button { font-size: 11px; border: 1px solid #cbd5e1; background: #fff; padding: 1px 8px; cursor: pointer; color: #334155; }
+#sq-float .sq-panel-step button:first-child { border-radius: 4px 0 0 4px; }
+#sq-float .sq-panel-step button + button { border-left: 0; border-radius: 0 4px 4px 0; }
+#sq-float .sq-panel-step button:hover:not(:disabled) { background: #eff6ff; }
+#sq-float .sq-panel-step button:disabled { color: #cbd5e1; cursor: default; } /* Redmine gives <body> a minimum width of 900px: with the panel the page would grow wider than the window */
 
 /* The view with an issue at the top, inside the issue page: as tall as its content, scrolling sideways only */
 #sq-root.sq-inline .sq-scroller { max-height: none !important; }
@@ -400,6 +453,86 @@ body.sq-panel-on { padding-right: var(--sq-panel-w); min-width: 0; } /* Redmine 
 #sq-stage-timeline .sq-stage-save:disabled { background: #94a3b8; cursor: not-allowed; }
 #sq-stage-timeline .sq-cannot-fit { align-self: center; font-size: 11px; font-weight: bold; color: #dc2626; }
 #sq-stage-timeline .sq-cannot-fit[hidden] { display: none; }
+
+/* The rest of the issue page's stage timeline, moved out of the page (2026-11-21): the frame and the heading row, the
+   banners, the bar and its boxes, the date callouts, the adjusting controls, the branched issues and the form for a new
+   branch. Only what depends on the issue stays in the page (the color of a stage, --c). The parts a script opens and
+   closes start hidden here; the script sets their display itself. */
+#sq-stage-timeline { margin: 10px 0 16px 0; padding: 12px 14px 14px 14px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+#sq-stage-timeline .sqb-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; flex-wrap: wrap; gap: 8px; }
+#sq-stage-timeline .sqb-title { font-weight: bold; color: #334155; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+#sq-stage-timeline .sqb-dot { display: inline-block; width: 8px; height: 8px; background: #3b82f6; border-radius: 50%; }
+#sq-stage-timeline .sqb-dot.sqb-dot-late { background: #ef4444; }
+#sq-stage-timeline .sqb-origin { background: #f0fdf4; border: 1px solid #86efac; color: #166534; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: normal; display: inline-flex; align-items: center; gap: 4px; }
+#sq-stage-timeline .sqb-origin a { color: #15803d; font-weight: bold; text-decoration: none; }
+#sq-stage-timeline .sqb-origin-status { color: #64748b; font-size: 10px; }
+#sq-stage-timeline .sqb-diff { font-weight: bold; font-size: 11px; padding: 2px 8px; border-radius: 10px; }
+#sq-stage-timeline .sqb-diff-behind { color: #b91c1c; background: #fee2e2; border: 1px solid #f87171; }
+#sq-stage-timeline .sqb-diff-ahead { color: #047857; background: #ecfdf5; border: 1px solid #6ee7b7; }
+#sq-stage-timeline .sqb-tools { font-size: 11px; color: #64748b; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+#sq-stage-timeline #stage-mode-switch { display: none; border: 1px solid #cbd5e1; border-radius: 4px; overflow: hidden; }
+#sq-stage-timeline .sqb-btn { border-radius: 4px; padding: 2px 8px; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+#sq-stage-timeline .sq-adjust-toggle { background: #ffffff; border: 1px solid #cbd5e1; color: #2563eb; }
+#sq-stage-timeline .sqb-btn-branch { background: #ecfdf5; border: 1px solid #a7f3d0; color: #047857; font-weight: bold; }
+#sq-stage-timeline .sqb-banner { margin-bottom: 30px; padding: 4px 10px; border-radius: 4px; font-size: 11px; }
+#sq-stage-timeline .sq-no-working-day { background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; }
+#sq-stage-timeline .sqb-banner-oos { background: #fff7ed; border: 1px solid #fdba74; color: #c2410c; }
+#sq-stage-timeline #stage-pipeline-bar { display: flex; width: max-content; border-radius: 4px; background: #f1f5f9; padding: 2px; position: relative; }
+#sq-stage-timeline #stage-adjustable-group { display: flex; flex: 0 0 auto; min-width: max-content; }
+#sq-stage-timeline .stage-drag-seg { flex: 0 0 auto; width: max-content; min-width: max-content; border-radius: 4px; padding: 8px 10px; box-sizing: border-box; position: relative; }
+#sq-stage-timeline .stage-drag-handle { position: absolute; right: -12px; top: 0; bottom: 0; width: 24px; cursor: ew-resize; z-index: 6; display: none; align-items: center; justify-content: center; }
+#sq-stage-timeline .stage-drag-grip { width: 4px; height: 60%; border-radius: 2px; background: rgba(255,255,255,0.95); box-shadow: 0 0 0 1px rgba(15,23,42,0.4); }
+#sq-stage-timeline .sqb-stage-head { display: flex; justify-content: space-between; align-items: center; gap: 4px; margin-bottom: 4px; }
+#sq-stage-timeline .sqb-stage-name { font-weight: bold; }
+#sq-stage-timeline .stage-duration-edit { display: none; align-items: center; gap: 3px; }
+#sq-stage-timeline .stage-all-days-edit { display: none; margin-top: 3px; font-size: 9px; cursor: pointer; white-space: nowrap; }
+#sq-stage-timeline .stage-all-days { margin: 0 2px 0 0; vertical-align: middle; }
+#sq-stage-timeline .stage-slack-note { display: none; position: absolute; left: 4px; top: calc(100% + 2px); white-space: nowrap; font-size: 9px; color: #dc2626; font-weight: bold; }
+#sq-stage-timeline .sqb-gap { width: 3px; }
+/* the date callouts above the bar: at the left edge of the first box (the start), at each boundary, at the right end (the due date) */
+#sq-stage-timeline .sqb-pill { position: absolute; top: -26px; z-index: 5; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
+#sq-stage-timeline #stage-start-pill { left: -1px; align-items: flex-start; }
+#sq-stage-timeline .sqb-pill-boundary { right: -1px; transform: translateX(50%); }
+#sq-stage-timeline #stage-due-pill { right: 1px; transform: translateX(50%); }
+#sq-stage-timeline .sqb-pill-box { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 6px; font-size: 9px; line-height: 1.25; color: #334155; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,0.08); text-align: center; }
+#sq-stage-timeline #stage-due-pill .sqb-pill-box { background: #eff6ff; border-color: #93c5fd; color: #1e3a8a; font-weight: bold; }
+#sq-stage-timeline .sqb-pill-plan { font-weight: bold; color: #475569; }
+#sq-stage-timeline .sqb-pill-actual { font-weight: bold; color: #047857; }
+#sq-stage-timeline .sqb-pill-actual.sqb-late { color: #b91c1c; }
+#sq-stage-timeline .sqb-pill-diff { font-size: 8px; }
+#sq-stage-timeline .sqb-pill-none { color: #94a3b8; font-size: 8px; }
+#sq-stage-timeline .sqb-tick { width: 1px; height: 5px; background: #94a3b8; }
+#sq-stage-timeline #stage-due-pill .sqb-tick { background: #93c5fd; }
+/* the adjusting controls under the bar */
+#sq-stage-timeline #stage-edit-controls { display: none; margin-top: 12px; }
+#sq-stage-timeline .sqb-controls-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+#sq-stage-timeline .sq-start-bubble { font-size: 12px; color: #1e3a8a; display: inline-flex; align-items: center; gap: 4px; }
+#sq-stage-timeline #stage-start-input { font-size: 11px; padding: 1px 4px; border: 1px solid #cbd5e1; border-radius: 3px; }
+#sq-stage-timeline .sqb-total { font-size: 12px; color: #334155; }
+#sq-stage-timeline #preview-total-due-date { color: #2563eb; }
+#sq-stage-timeline .sqb-actions { display: flex; gap: 8px; margin-left: auto; }
+#sq-stage-timeline .sqb-cancel { padding: 4px 12px; font-size: 11px; border: 1px solid #cbd5e1; background: #ffffff; border-radius: 4px; cursor: pointer; color: #64748b; }
+#sq-stage-timeline .sqb-hint { font-size: 10px; color: #64748b; margin: 6px 0 0; }
+/* the branched issues */
+#sq-stage-timeline .sqb-branches { margin-top: 10px; padding: 6px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 11px; }
+#sq-stage-timeline .sqb-branches-head { font-weight: bold; color: #15803d; display: inline-flex; align-items: center; gap: 4px; }
+#sq-stage-timeline .sqb-branch { background: #ffffff; border: 1px solid #cbd5e1; padding: 2px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; }
+#sq-stage-timeline .sqb-branch a { color: #1e40af; font-weight: bold; text-decoration: none; }
+#sq-stage-timeline .sqb-branch-status { font-size: 10px; color: #475569; background: #f1f5f9; padding: 0 4px; border-radius: 2px; }
+#sq-stage-timeline .sqb-branch-assignee { font-size: 10px; color: #94a3b8; }
+/* the form for a new branched task */
+#sq-stage-timeline #branch-create-form-panel { display: none; margin-top: 12px; padding: 12px 14px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+#sq-stage-timeline .sqb-form-head { font-weight: bold; color: #166534; margin-bottom: 8px; font-size: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px; }
+#sq-stage-timeline .sqb-form-note { font-size: 11px; font-weight: normal; color: #15803d; }
+#sq-stage-timeline .sqb-form-fields { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; }
+#sq-stage-timeline .sqb-field { flex: 1; min-width: 120px; }
+#sq-stage-timeline .sqb-field-wide { flex: 2; min-width: 200px; }
+#sq-stage-timeline .sqb-field label { display: block; font-size: 11px; font-weight: bold; color: #374151; margin-bottom: 2px; }
+#sq-stage-timeline .sqb-field input, #sq-stage-timeline .sqb-field select { width: 100%; box-sizing: border-box; padding: 4px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff; }
+#sq-stage-timeline #panel-branch-subject { padding: 4px 8px; font-size: 12px; border: 1.5px solid #16a34a; color: #1e293b; }
+#sq-stage-timeline .sqb-field input[type=date] { padding: 3px 6px; }
+#sq-stage-timeline .sqb-form-actions { display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid #bbf7d0; padding-top: 8px; }
+#sq-stage-timeline .sqb-submit { padding: 4px 14px; font-size: 11px; border: none; background: #16a34a; color: #ffffff; border-radius: 4px; font-weight: bold; cursor: pointer; }
 
 /* Touch, keyboard and screen readers (2026-11-14): bigger day boxes without the spinner, the reason of a grayed-out start
    date on screen, visible focus */

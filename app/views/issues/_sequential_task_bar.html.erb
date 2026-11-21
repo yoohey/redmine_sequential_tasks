@@ -44,7 +44,7 @@
     is_behind = summary.delayed?
     is_ahead = summary.ahead?
     # Which stages the schedule adjustment may change
-    rescheduler = RedmineSequentialTasks::StageRescheduler.new(stages.to_a, @issue.closed? ? nil : summary.current_stage)
+    rescheduler = RedmineSequentialTasks::StageRescheduler.new(stages.to_a, @issue.closed? ? nil : summary.schedule_anchor)
     # the one adjustable stage right before the due date; it absorbs the change in "fixed_due" mode
     adjustable_stages = stages.to_a.select { |s| rescheduler.adjustable?(s) }
     slack_stage = adjustable_stages.size > 1 ? adjustable_stages.last : nil
@@ -75,35 +75,35 @@
     branched_issues = @issue.visible_branched_issues
 %>
 <%= stylesheet_link_tag 'sequential_tasks', plugin: 'redmine_sequential_tasks' %>
-<div class="sequential-task-container" id="sq-stage-timeline" <%= RedmineSequentialTasks::DateFormat.data_attributes.map { |k, v| %(#{k}="#{h(v)}") }.join(' ').html_safe %> data-t-discard="<%= l('sequential_tasks.stage_form.discard_confirm') %>" data-non-working="<%= RedmineSequentialTasks::WorkingDayCalculator.non_working_week_days.to_json %>" style="margin: 10px 0 16px 0; padding: 12px 14px 14px 14px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; flex-wrap: wrap; gap: 8px;">
-    <div style="font-weight: bold; color: #334155; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-      <span style="display: inline-block; width: 8px; height: 8px; background: <%= is_behind ? '#ef4444' : '#3b82f6' %>; border-radius: 50%;"></span>
+<div class="sequential-task-container" id="sq-stage-timeline" <%= RedmineSequentialTasks::DateFormat.data_attributes.map { |k, v| %(#{k}="#{h(v)}") }.join(' ').html_safe %> data-t-discard="<%= l('sequential_tasks.stage_form.discard_confirm') %>" data-non-working="<%= RedmineSequentialTasks::WorkingDayCalculator.non_working_week_days.to_json %>">
+  <div class="sqb-head">
+    <div class="sqb-title">
+      <span class="sqb-dot<%= ' sqb-dot-late' if is_behind %>"></span>
       <%= l('sequential_tasks.issue_bar.heading') %>
 
       <% if parent_issue %>
-        <span style="background: #f0fdf4; border: 1px solid #86efac; color: #166534; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: normal; display: inline-flex; align-items: center; gap: 4px;">
-          🌿 <%= l('sequential_tasks.issue_bar.origin') %> <%= link_to "##{parent_issue.id} #{parent_issue.subject}", issue_path(parent_issue), style: "color: #15803d; font-weight: bold; text-decoration: none;" %>
-          <span style="color: #64748b; font-size: 10px;">(<%= parent_issue.status.name %>)</span>
+        <span class="sqb-origin">
+          🌿 <%= l('sequential_tasks.issue_bar.origin') %> <%= link_to "##{parent_issue.id} #{parent_issue.subject}", issue_path(parent_issue) %>
+          <span class="sqb-origin-status">(<%= parent_issue.status.name %>)</span>
         </span>
       <% end %>
 
       <% if is_behind %>
         <!-- Alarm badge when not reached the expected stage -->
-        <span style="font-weight: bold; font-size: 11px; color: #b91c1c; background: #fee2e2; border: 1px solid #f87171; padding: 2px 8px; border-radius: 10px;">
+        <span class="sqb-diff sqb-diff-behind">
           <%= diff_text %>
         </span>
       <% elsif is_ahead %>
-        <span style="font-weight: bold; font-size: 11px; color: #047857; background: #ecfdf5; border: 1px solid #6ee7b7; padding: 2px 8px; border-radius: 10px;">
+        <span class="sqb-diff sqb-diff-ahead">
           <%= diff_text %>
         </span>
       <% end %>
     </div>
-    <div style="font-size: 11px; color: #64748b; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+    <div class="sqb-tools">
       <% if slack_stage && can_adjust_schedule && rescheduler.adjustable_any? && schedulable && stages_saved %>
         <%# The mode of the adjustment, in the heading row and only while adjusting; it lives outside the
             form below, so its radios join it through the form attribute (form.reset() resets them too) %>
-        <div id="stage-mode-switch" style="display: none; border: 1px solid #cbd5e1; border-radius: 4px; overflow: hidden;">
+        <div id="stage-mode-switch">
           <label title="<%= l('sequential_tasks.stage_form.mode_fixed_due_hint') %>" data-hint="<%= l('sequential_tasks.stage_form.mode_fixed_due_hint') %>">
             <input type="radio" name="mode" value="fixed_due" form="sequential-task-stage-edit-form" checked><%= l('sequential_tasks.stage_form.mode_fixed_due') %>
           </label>
@@ -116,12 +116,12 @@
 
       <% if User.current.allowed_to?(:edit_issues, @issue.project) %>
         <% if rescheduler.adjustable_any? && schedulable && stages_saved %>
-        <button type="button" data-sq-act="adjust" class="sq-adjust-toggle" aria-expanded="false" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 8px; font-size: 11px; color: #2563eb; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+        <button type="button" data-sq-act="adjust" class="sqb-btn sq-adjust-toggle" aria-expanded="false">
           <span>📅 <%= l('sequential_tasks.issue_bar.adjust') %></span>
         </button>
         <% end %>
 
-        <button type="button" data-sq-act="branch" style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 4px; padding: 2px 8px; font-size: 11px; color: #047857; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-weight: bold;">
+        <button type="button" data-sq-act="branch" class="sqb-btn sqb-btn-branch">
           <span>+🌿 <%= l('sequential_tasks.issue_bar.create_branch') %></span>
         </button>
       <% end %>
@@ -129,13 +129,13 @@
   </div>
 
   <% unless schedulable %>
-    <div class="sq-no-working-day" style="margin-bottom: 30px; padding: 4px 10px; background: #fef2f2; border: 1px solid #fca5a5; border-radius: 4px; color: #b91c1c; font-size: 11px;">
+    <div class="sqb-banner sq-no-working-day">
       ⚠ <%= l('sequential_tasks.flash.no_working_day') %>
     </div>
   <% end %>
   <% if summary.out_of_stage? %>
     <%# 30px below: the date callouts stand above the bar (top: -26px) and would cover a banner right above it %>
-    <div style="margin-bottom: 30px; padding: 4px 10px; background: #fff7ed; border: 1px solid #fdba74; border-radius: 4px; color: #c2410c; font-size: 11px;">
+    <div class="sqb-banner sqb-banner-oos">
       ⚑ <%= current_stage ? l('sequential_tasks.out_of_stage.banner', status: @issue.status.name, stage: current_stage.status&.name) : l('sequential_tasks.out_of_stage.banner_no_stage', status: @issue.status.name) %>
     </div>
   <% end %>
@@ -159,7 +159,8 @@
   <% last_adjustable_id = adjustable_stages.last&.id %>
   <% open_group = adjustable_stages.size > 1 %>
   <%= form_tag(issue_sequential_task_stages_path(@issue.id), method: :put, id: 'sequential-task-stage-edit-form') do %>
-    <div id="stage-pipeline-bar" data-orig-due="<%= stages.last&.planned_end_date&.strftime('%Y-%m-%d') %>" data-t-working="<%= l('sequential_tasks.issue_bar.working_days') %>" data-t-all-days="<%= l('sequential_tasks.issue_bar.all_days_unit') %>" class="sq-style-<%= RedmineSequentialTasks::BarStyle.normalize(setting.bar_style) %>" style="display: flex; width: max-content; border-radius: 4px; background: #f1f5f9; padding: 2px; position: relative;">
+    <%= hidden_field_tag :sq_float, '1', id: nil if params[:sq_float] == '1' %>
+    <div id="stage-pipeline-bar" data-orig-due="<%= stages.last&.planned_end_date&.strftime('%Y-%m-%d') %>" data-t-working="<%= l('sequential_tasks.issue_bar.working_days') %>" data-t-all-days="<%= l('sequential_tasks.issue_bar.all_days_unit') %>" class="sq-style-<%= RedmineSequentialTasks::BarStyle.normalize(setting.bar_style) %>">
       <%# A stage of zero days gets no box, as on the project's timeline; it is never adjustable %>
       <% shown_stages = stages.reject { |s| s.respond_to?(:zero_day) && s.zero_day } %>
       <% shown_stages.each_with_index do |stage, idx|
@@ -187,21 +188,21 @@
              end
       %>
         <% if open_group && stage.id == first_adjustable_id %>
-          <div id="stage-adjustable-group" style="display: flex; flex: 0 0 auto; min-width: max-content;">
+          <div id="stage-adjustable-group">
         <% end %>
         <!-- Stage Box: its own no-wrap width + 10px per day after the first (set by sequential_task_bar.js) -->
         <div class="stage-drag-seg sq-bar-<%= bar_kind %>" data-stage-id="<%= stage.id %>" data-all-days="<%= stage.all_days? ? '1' : '0' %>" data-fixed="<%= is_adjustable_box ? '0' : '1' %>" data-slack="<%= is_slack_box ? '1' : '0' %>"
              data-orig-duration="<%= box_days %>" data-start="<%= stage.planned_start_date&.strftime('%Y-%m-%d') %>" data-end="<%= stage.planned_end_date&.strftime('%Y-%m-%d') %>"
-             style="--c: <%= base_color %>; flex: 0 0 auto; width: max-content; min-width: max-content; border-radius: 4px; padding: 8px 10px; box-sizing: border-box; position: relative;">
+             style="--c: <%= base_color %>;">
           <% if editable_screen && is_adjustable_box %>
             <div class="stage-drag-handle<%= ' stage-drag-handle-slack' if is_slack_box %>" data-stage-id="<%= stage.id %>" title="<%= l('sequential_tasks.stage_form.drag_hint') %>"
-                 style="position: absolute; right: -12px; top: 0; bottom: 0; width: 24px; cursor: ew-resize; z-index: 6; display: none; align-items: center; justify-content: center;<%= ' visibility: hidden;' if is_slack_box %>">
-              <div class="stage-drag-grip" style="width: 4px; height: 60%; border-radius: 2px; background: rgba(255,255,255,0.95); box-shadow: 0 0 0 1px rgba(15,23,42,0.4);"></div>
+                 <%= raw ' style="visibility: hidden;"' if is_slack_box %>>
+              <div class="stage-drag-grip"></div>
             </div>
           <% end %>
           <!-- Stage Name & Badge -->
-          <div style="display: flex; justify-content: space-between; align-items: center; gap: 4px; margin-bottom: 4px;">
-            <span style="font-weight: bold;"><%= glyph %><%= st_name %></span>
+          <div class="sqb-stage-head">
+            <span class="sqb-stage-name"><%= glyph %><%= st_name %></span>
             <span class="sq-stage-badge"><%= badge_text %></span>
           </div>
 
@@ -210,21 +211,21 @@
           <div class="sq-stage-days">
               <span class="stage-duration-static"><%= l(stage.all_days? ? 'sequential_tasks.issue_bar.duration_all_days' : 'sequential_tasks.issue_bar.duration', days: box_days) %></span>
               <% if editable_screen && is_adjustable_box %>
-                <span class="stage-duration-edit" style="display: none; align-items: center; gap: 3px;">
+                <span class="stage-duration-edit">
                   <input type="number" name="stages[<%= stage.id %>][duration_days]" class="stage-duration-input" value="<%= box_days %>"
                          min="1" max="365" inputmode="numeric" aria-label="<%= l('sequential_tasks.stage_form.days_label', stage: st_name) %>">
                   <span class="stage-days-unit"><%= l(stage.all_days? ? 'sequential_tasks.issue_bar.all_days_unit' : 'sequential_tasks.issue_bar.working_days') %></span>
                 </span>
                 <%# this stage counts the non-working days too (e.g. recovered on a weekend); its own line, so the box
                     does not get wider. The hidden 0 is sent when the box is not ticked %>
-                <label class="stage-all-days-edit" title="<%= l('sequential_tasks.stage_form.count_non_working_title') %>" style="display: none; margin-top: 3px; font-size: 9px; cursor: pointer; white-space: nowrap;">
+                <label class="stage-all-days-edit" title="<%= l('sequential_tasks.stage_form.count_non_working_title') %>">
                   <input type="hidden" name="stages[<%= stage.id %>][count_non_working]" value="0">
-                  <input type="checkbox" name="stages[<%= stage.id %>][count_non_working]" value="1" class="stage-all-days"<%= ' checked' if stage.all_days? %> aria-label="<%= l('sequential_tasks.stage_form.count_non_working_label', stage: st_name) %>" style="margin: 0 2px 0 0; vertical-align: middle;"><%= l('sequential_tasks.stage_form.count_non_working') %>
+                  <input type="checkbox" name="stages[<%= stage.id %>][count_non_working]" value="1" class="stage-all-days"<%= ' checked' if stage.all_days? %> aria-label="<%= l('sequential_tasks.stage_form.count_non_working_label', stage: st_name) %>"><%= l('sequential_tasks.stage_form.count_non_working') %>
                 </label>
                 <% if is_slack_box %>
                   <%# Only when the other stages leave this one no day before the due date (fixed_due mode); the mode switch itself says the rest.
                       Just under the box, out of the flow, so it does not widen the box (its width is its content's) %>
-                  <span class="stage-slack-note" style="display: none; position: absolute; left: 4px; top: calc(100% + 2px); white-space: nowrap; font-size: 9px; color: #dc2626; font-weight: bold;"><%= l('sequential_tasks.stage_form.cannot_fit_hint') %></span>
+                  <span class="stage-slack-note"><%= l('sequential_tasks.stage_form.cannot_fit_hint') %></span>
                 <% end %>
               <% end %>
           </div>
@@ -237,27 +238,27 @@
               start_actual_d = summary.not_started_stage?(stage) ? nil : RedmineSequentialTasks::UserTime.date_of(stage.actual_start_at)
               start_diff = (start_actual_d && start_planned_d) ? (start_actual_d - start_planned_d).to_i : nil
             %>
-            <div id="stage-start-pill" style="position: absolute; left: -1px; top: -26px; z-index: 5; display: flex; flex-direction: column; align-items: flex-start; pointer-events: none;">
-              <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 6px; font-size: 9px; line-height: 1.25; color: #334155; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,0.08); text-align: center;">
-                <div style="font-weight: bold; color: #475569;">
+            <div id="stage-start-pill" class="sqb-pill">
+              <div class="sqb-pill-box">
+                <div class="sqb-pill-plan">
                   <%= l('sequential_tasks.table.planned_label') %> <span class="stage-start-date"><%= start_planned_d ? RedmineSequentialTasks::DateFormat.short(start_planned_d) : '-' %></span>
                 </div>
                 <% if start_actual_d %>
-                  <div style="color: <%= start_diff && start_diff > 0 ? '#b91c1c' : '#047857' %>; font-weight: bold;">
+                  <div class="sqb-pill-actual<%= ' sqb-late' if start_diff && start_diff > 0 %>">
                     <%= l('sequential_tasks.table.actual_label') %> <%= RedmineSequentialTasks::DateFormat.short(start_actual_d) %>
                     <% if start_diff && start_diff > 0 %>
-                      <span style="font-size: 8px;">(+<%= start_diff %>d)</span>
+                      <span class="sqb-pill-diff">(+<%= start_diff %>d)</span>
                     <% elsif start_diff && start_diff < 0 %>
-                      <span style="font-size: 8px;">(<%= start_diff %>d)</span>
+                      <span class="sqb-pill-diff">(<%= start_diff %>d)</span>
                     <% end %>
                   </div>
                 <% else %>
-                  <div style="color: #94a3b8; font-size: 8px;">
+                  <div class="sqb-pill-none">
                     <%= l('sequential_tasks.issue_bar.actual_not_yet') %>
                   </div>
                 <% end %>
               </div>
-              <div style="width: 1px; height: 5px; background: #94a3b8;"></div>
+              <div class="sqb-tick"></div>
             </div>
           <% end %>
 
@@ -270,36 +271,36 @@
               # Milestone variance (difference between planned and actual exit date)
               diff_days = (boundary_actual_d && boundary_planned_d) ? (boundary_actual_d - boundary_planned_d).to_i : nil
             %>
-            <div id="stage-plan-pill-<%= stage.id %>" style="position: absolute; right: -1px; top: -26px; transform: translateX(50%); z-index: 5; display: flex; flex-direction: column; align-items: center; pointer-events: none;">
+            <div id="stage-plan-pill-<%= stage.id %>" class="sqb-pill sqb-pill-boundary">
               <!-- Pill with Planned and Actual Dates Stacked -->
-              <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 6px; font-size: 9px; line-height: 1.25; color: #334155; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,0.08); text-align: center;">
-                <div style="font-weight: bold; color: #475569;">
+              <div class="sqb-pill-box">
+                <div class="sqb-pill-plan">
                   <%= l('sequential_tasks.table.planned_label') %> <span class="stage-plan-date"><%= boundary_planned_d ? RedmineSequentialTasks::DateFormat.short(boundary_planned_d) : '-' %></span>
                 </div>
                 <% if boundary_actual_d %>
-                  <div style="color: <%= diff_days && diff_days > 0 ? '#b91c1c' : '#047857' %>; font-weight: bold;">
+                  <div class="sqb-pill-actual<%= ' sqb-late' if diff_days && diff_days > 0 %>">
                     <%= l('sequential_tasks.table.actual_label') %> <%= RedmineSequentialTasks::DateFormat.short(boundary_actual_d) %>
                     <% if diff_days && diff_days > 0 %>
-                      <span style="font-size: 8px;">(+<%= diff_days %>d)</span>
+                      <span class="sqb-pill-diff">(+<%= diff_days %>d)</span>
                     <% elsif diff_days && diff_days < 0 %>
-                      <span style="font-size: 8px;">(<%= diff_days %>d)</span>
+                      <span class="sqb-pill-diff">(<%= diff_days %>d)</span>
                     <% end %>
                   </div>
                 <% else %>
-                  <div style="color: #94a3b8; font-size: 8px;">
+                  <div class="sqb-pill-none">
                     <%= l('sequential_tasks.issue_bar.actual_not_yet') %>
                   </div>
                 <% end %>
               </div>
               <!-- Downward pointing tick -->
-              <div style="width: 1px; height: 5px; background: #94a3b8;"></div>
+              <div class="sqb-tick"></div>
             </div>
           <% end %>
         </div>
 
         <% if idx < shown_stages.size - 1 %>
           <!-- Small separator space between boxes -->
-          <div style="width: 3px;"></div>
+          <div class="sqb-gap"></div>
         <% end %>
         <% if open_group && stage.id == last_adjustable_id %>
           </div><!-- /#stage-adjustable-group -->
@@ -307,35 +308,34 @@
       <% end %>
 
       <!-- Due-date callout: lives outside the loop, pinned to the bar's own right edge; updated live while adjusting -->
-      <div id="stage-due-pill" style="position: absolute; right: 1px; top: -26px; transform: translateX(50%); z-index: 5; display: flex; flex-direction: column; align-items: center; pointer-events: none;">
-        <div style="background: #eff6ff; border: 1px solid #93c5fd; border-radius: 4px; padding: 2px 6px; font-size: 9px; line-height: 1.25; color: #1e3a8a; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,0.08); text-align: center; font-weight: bold;">
+      <div id="stage-due-pill" class="sqb-pill">
+        <div class="sqb-pill-box">
           <%= l('sequential_tasks.issue_bar.due_date') %>: <span class="stage-due-date"><%= @issue.due_date ? RedmineSequentialTasks::DateFormat.short(@issue.due_date) : (RedmineSequentialTasks::DateFormat.short(stages.last&.planned_end_date) || '-') %></span>
         </div>
-        <div style="width: 1px; height: 5px; background: #93c5fd;"></div>
+        <div class="sqb-tick"></div>
       </div>
     </div>
 
     <% if editable_screen %>
       <!-- Controls (Collapsible): mode switch, the new due date, cancel/save. No frame or heading of their own:
            they belong to the stage timeline above, which is the only place a day count is shown or typed. -->
-      <div id="stage-edit-controls" style="display: none; margin-top: 12px;">
-        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px;">
+      <div id="stage-edit-controls">
+        <div class="sqb-controls-row">
           <% if editable_screen %>
             <%# A callout pointing up at the left end of the bar, which is the start %>
-            <label class="sq-start-bubble<%= ' sq-start-locked' unless start_changeable %>" title="<%= start_locked_reason %>" style="font-size: 12px; color: #1e3a8a; display: inline-flex; align-items: center; gap: 4px;">
+            <label class="sq-start-bubble<%= ' sq-start-locked' unless start_changeable %>" title="<%= start_locked_reason %>">
               <%= l('sequential_tasks.stage_form.start_date') %>
               <input type="date" name="start_date" id="stage-start-input" value="<%= stages.first.planned_start_date&.strftime('%Y-%m-%d') %>"
-                     <%= 'disabled' unless start_changeable %> aria-describedby="stage-start-why"
-                     style="font-size: 11px; padding: 1px 4px; border: 1px solid #cbd5e1; border-radius: 3px;">
+                     <%= 'disabled' unless start_changeable %> aria-describedby="stage-start-why">
               <%# the reason, short and on screen while it is grayed out (not only on hover: touch and keyboard) %>
               <% unless start_changeable %><span id="stage-start-why" class="sq-start-why">🔒 <%= l(start_workflow_ok ? 'sequential_tasks.stage_form.start_locked_short' : 'sequential_tasks.stage_form.start_locked_workflow_short') %></span><% end %>
             </label>
           <% end %>
-          <div style="font-size: 12px; color: #334155;">
-            <%= l('sequential_tasks.stage_form.total_due') %>: <strong id="preview-total-due-date" style="color: #2563eb;"><%= stages.last&.planned_end_date ? RedmineSequentialTasks::DateFormat.full(stages.last.planned_end_date) : '-' %></strong>
+          <div class="sqb-total">
+            <%= l('sequential_tasks.stage_form.total_due') %>: <strong id="preview-total-due-date"><%= stages.last&.planned_end_date ? RedmineSequentialTasks::DateFormat.full(stages.last.planned_end_date) : '-' %></strong>
           </div>
-          <div style="display: flex; gap: 8px; margin-left: auto;">
-            <button type="button" data-sq-act="adjust" style="padding: 4px 12px; font-size: 11px; border: 1px solid #cbd5e1; background: #ffffff; border-radius: 4px; cursor: pointer; color: #64748b;">
+          <div class="sqb-actions">
+            <button type="button" data-sq-act="adjust" class="sqb-cancel">
               <%= l(:button_cancel) %>
             </button>
             <span id="stage-cannot-fit" class="sq-cannot-fit" hidden><%= l('sequential_tasks.stage_form.cannot_fit_hint') %></span>
@@ -345,25 +345,25 @@
           </div>
         </div>
         <%# the selected mode in words (not only on hover), then how to adjust; read out when the mode changes %>
-        <p style="font-size: 10px; color: #64748b; margin: 6px 0 0;"><span id="stage-mode-hint" aria-live="polite"></span> <%= l('sequential_tasks.stage_form.drag_bar_hint') %> <%= l('sequential_tasks.stage_form.esc_hint') %></p>
+        <p class="sqb-hint"><span id="stage-mode-hint" aria-live="polite"></span> <%= l('sequential_tasks.stage_form.drag_bar_hint') %> <%= l('sequential_tasks.stage_form.esc_hint') %></p>
       </div>
     <% end %>
   <% end %>
 
   <!-- Branched Issues List (Children) -->
   <% if branched_issues.any? %>
-    <div style="margin-top: 10px; padding: 6px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 11px;">
-      <span style="font-weight: bold; color: #15803d; display: inline-flex; align-items: center; gap: 4px;">
+    <div class="sqb-branches">
+      <span class="sqb-branches-head">
         🌿 <%= l('sequential_tasks.issue_bar.branches_heading', count: branched_issues.size) %>
       </span>
       <% branched_issues.each do |bi| %>
-        <span style="background: #ffffff; border: 1px solid #cbd5e1; padding: 2px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
-          <%= link_to "##{bi.id} #{bi.subject}", issue_path(bi), style: "color: #1e40af; font-weight: bold; text-decoration: none;" %>
-          <span style="font-size: 10px; color: #475569; background: #f1f5f9; padding: 0 4px; border-radius: 2px;">
+        <span class="sqb-branch">
+          <%= link_to "##{bi.id} #{bi.subject}", issue_path(bi) %>
+          <span class="sqb-branch-status">
             <%= bi.status.name %>
           </span>
           <% if bi.assigned_to %>
-            <span style="font-size: 10px; color: #94a3b8;">(<%= bi.assigned_to.name %>)</span>
+            <span class="sqb-branch-assignee">(<%= bi.assigned_to.name %>)</span>
           <% end %>
         </span>
       <% end %>
@@ -372,52 +372,48 @@
 
   <!-- Loose Branch Task Creation Panel (Collapsible) -->
   <% if User.current.allowed_to?(:add_issues, @issue.project) %>
-    <div id="branch-create-form-panel" style="display: none; margin-top: 12px; padding: 12px 14px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+    <div id="branch-create-form-panel">
       <%= form_tag(issue_sequential_task_branches_path(@issue.id), method: :post) do %>
-        <%= hidden_field_tag :back_url, issue_path(@issue) %>
-        <div style="font-weight: bold; color: #166534; margin-bottom: 8px; font-size: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
+        <%= hidden_field_tag :back_url, issue_path(@issue, params[:sq_float] == '1' ? { sq_float: 1 } : {}) %>
+        <div class="sqb-form-head">
           <span>🌿 <%= l('sequential_tasks.issue_bar.branch_form_heading') %></span>
-          <span style="font-size: 11px; font-weight: normal; color: #15803d;">
+          <span class="sqb-form-note">
             <%= l('sequential_tasks.issue_bar.branch_form_note') %>
           </span>
         </div>
 
-        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px;">
-          <div style="flex: 2; min-width: 200px;">
-            <label style="display: block; font-size: 11px; font-weight: bold; color: #374151; margin-bottom: 2px;"><%= l(:field_subject) %></label>
+        <div class="sqb-form-fields">
+          <div class="sqb-field sqb-field-wide">
+            <label><%= l(:field_subject) %></label>
             <% next_b_num = branched_issues.size + 1 %>
             <%= text_field_tag :subject, "#{@issue.subject}_#{next_b_num}",
-                               id: "panel-branch-subject",
-                               style: "width: 100%; box-sizing: border-box; padding: 4px 8px; font-size: 12px; border: 1.5px solid #16a34a; border-radius: 4px; background: #ffffff; color: #1e293b;" %>
+                               id: "panel-branch-subject" %>
           </div>
 
-          <div style="flex: 1; min-width: 120px;">
-            <label style="display: block; font-size: 11px; font-weight: bold; color: #374151; margin-bottom: 2px;"><%= l(:field_tracker) %></label>
+          <div class="sqb-field">
+            <label><%= l(:field_tracker) %></label>
             <%= select_tag :tracker_id,
-                           options_from_collection_for_select(@issue.project.trackers, :id, :name, @issue.tracker_id),
-                           style: "width: 100%; box-sizing: border-box; padding: 4px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff;" %>
+                           options_from_collection_for_select(@issue.project.trackers, :id, :name, @issue.tracker_id) %>
           </div>
 
-          <div style="flex: 1; min-width: 120px;">
-            <label style="display: block; font-size: 11px; font-weight: bold; color: #374151; margin-bottom: 2px;"><%= l(:field_assigned_to) %></label>
+          <div class="sqb-field">
+            <label><%= l(:field_assigned_to) %></label>
             <%= select_tag :assigned_to_id,
                            options_from_collection_for_select(@issue.project.assignable_users, :id, :name, @issue.assigned_to_id),
-                           include_blank: l('sequential_tasks.issue_bar.include_blank_unassigned'),
-                           style: "width: 100%; box-sizing: border-box; padding: 4px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff;" %>
+                           include_blank: l('sequential_tasks.issue_bar.include_blank_unassigned') %>
           </div>
 
-          <div style="flex: 1; min-width: 120px;">
-            <label style="display: block; font-size: 11px; font-weight: bold; color: #374151; margin-bottom: 2px;"><%= l(:field_start_date) %></label>
-            <%= date_field_tag :start_date, User.current.today,
-                               style: "width: 100%; box-sizing: border-box; padding: 3px 6px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff;" %>
+          <div class="sqb-field">
+            <label><%= l(:field_start_date) %></label>
+            <%= date_field_tag :start_date, SequentialTaskIssue.default_start_date(@issue) %>
           </div>
         </div>
 
-        <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid #bbf7d0; padding-top: 8px;">
-          <button type="button" data-sq-act="branch" style="padding: 4px 12px; font-size: 11px; border: 1px solid #cbd5e1; background: #ffffff; border-radius: 4px; cursor: pointer; color: #64748b;">
+        <div class="sqb-form-actions">
+          <button type="button" data-sq-act="branch" class="sqb-cancel">
             <%= l(:button_cancel) %>
           </button>
-          <button type="submit" style="padding: 4px 14px; font-size: 11px; border: none; background: #16a34a; color: #ffffff; border-radius: 4px; font-weight: bold; cursor: pointer;">
+          <button type="submit" class="sqb-submit">
             🌿 <%= l('sequential_tasks.issue_bar.create_branch') %>
           </button>
         </div>
