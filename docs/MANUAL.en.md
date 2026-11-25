@@ -1,8 +1,8 @@
-# Redmine Sequential Tasks: Operation and User Manual
+# Bamboo chart (redmine_sequential_tasks): Operation and User Manual
 
 [日本語](MANUAL.md)
 
-This is the operation and user manual of the Redmine plugin **`redmine_sequential_tasks` (Sequential Tasks)**.  
+This is the operation and user manual of the Redmine plugin **Bamboo chart** (its ID is `redmine_sequential_tasks`; Sequential Tasks). A Bamboo chart is one bar divided into the stages of an issue, like the nodes of a bamboo, showing the plan and the actual dates of each stage.  
 It is written for everyone from the people who create issues and manage their progress every day (software developers, and also people in design, quality assurance, production engineering and so on), to the project managers (PMs / Scrum Masters) who oversee several cases, and the system administrators who set up and run the environment.
 
 The screenshots were taken with made-up data (development and quality of a small liquid-transfer pump, PX-200; the product, the people and the defects are all made up). The data are in English, and "today" in them is one day later than in the Japanese manual, so some numbers (days late, days waiting) differ from it by one day. The release zip does not include the images and videos. To read it with the images, open [docs/MANUAL.en.md](https://github.com/yoohey/redmine_sequential_tasks/blob/main/docs/MANUAL.en.md) on GitHub.
@@ -25,7 +25,7 @@ The screenshots were taken with made-up data (development and quality of a small
     - [2.6 Switching it on in a project, permissions and plugin settings](#26-switching-it-on-in-a-project-permissions-and-plugin-settings)
 - **Part 2: Daily issue management (for the people doing the work)**
   - [Chapter 3: Managing stages on the issue page](#chapter-3-managing-stages-on-the-issue-page)
-    - [3.1 Creating an issue and the stage pipeline it gets](#31-creating-an-issue-and-the-stage-pipeline-it-gets)
+    - [3.1 Creating an issue and the plan of its stages](#31-creating-an-issue-and-the-plan-of-its-stages)
     - [3.2 Reading the bar (statuses and colors)](#32-reading-the-bar-statuses-and-colors)
     - [3.3 Adjusting the plan of each stage (behavior in detail)](#33-adjusting-the-plan-of-each-stage-behavior-in-detail)
     - [3.4 Using the "0-day wait (waiting to be picked up)" stage](#34-using-the-0-day-wait-waiting-to-be-picked-up-stage)
@@ -68,7 +68,7 @@ The screenshots were taken with made-up data (development and quality of a small
     - [10.3 The visit history for rework (issue_stage_visits)](#103-the-visit-history-for-rework-issue_stage_visits)
     - [10.4 Drawing performance (plain table + SVG overlay + vanilla JS)](#104-drawing-performance-plain-table--svg-overlay--vanilla-js)
   - [Chapter 11: Integration with external systems (REST API)](#chapter-11-integration-with-external-systems-rest-api)
-    - [11.1 The pipeline built for issues created through the REST API](#111-the-pipeline-built-for-issues-created-through-the-rest-api)
+    - [11.1 The plan of the stages for issues created through the REST API](#111-the-plan-of-the-stages-for-issues-created-through-the-rest-api)
     - [11.2 Use cases with a defect database or monitoring alerts](#112-use-cases-with-a-defect-database-or-monitoring-alerts)
   - [Chapter 12: FAQ, troubleshooting and maintenance](#chapter-12-faq-troubleshooting-and-maintenance)
     - [12.1 Working days and holidays (how other plugins fit in)](#121-working-days-and-holidays-how-other-plugins-fit-in)
@@ -97,7 +97,7 @@ For example, a countermeasure for a manufacturing defect (Received ➔ Part chec
 
 "Open/Closed is too coarse, a WBS in a Gantt chart is too heavy, and a Kanban card does not show its due dates." To resolve this dilemma, the plugin takes the approach of **"one issue (one line) per case, with its progress managed in several steps by its status"**. In practice it is designed and built on the following four principles.
 
-1. **Status = the stage pipeline**:
+1. **Status = the stage sequence**:
    No new concept is brought in: Redmine's own "statuses" are used as the stages in sequence. Redmine's done ratio (%) has vague rules for what to enter and varies from person to person, so the design treats "moving through the statuses" as the progress itself.
 2. **The plan laid out automatically and the actual dates recorded automatically (automated plan vs. actual)**:
    Enter only the start date when you create an issue, and the planned start and end dates of each stage and the overall due date are laid out from the standard days set beforehand (skipping weekends). After that, just move the status as the work goes on, and the actual date and time of each stage are stamped and recorded automatically.
@@ -116,7 +116,7 @@ The plugin has the following four screens for different uses.
 | Screen / component | Where | Main use |
 |---|---|---|
 | **Multi-stage bar** | Issue page (just below the description) | Shows the plan, the actual dates and the delays of each stage. Adjust the days of each stage; shows the wait before an issue is picked up. |
-| **Timeline** | The "Sequential Tasks" tab in the project menu | All issues, each stage on one calendar row. Detects delays with the ⚡ lightning line; adjusts the plan by 📅 dragging. |
+| **Timeline** | The "Bamboo chart" tab in the project menu | All issues, each stage on one calendar row. Detects delays with the ⚡ lightning line; adjusts the plan by 📅 dragging. |
 | **Matrix** | Project menu ➔ submenu "Matrix" | Plan vs. actual per tracker. Check the difference in each cell; export as CSV. |
 | **Bottleneck analysis** | Project menu ➔ submenu "Analysis" | Totals the median time spent in each stage, finds the 🚧 worst stage and flags issues that have stayed too long. |
 
@@ -152,15 +152,15 @@ Put it in Redmine's `plugins/` folder under the name `redmine_sequential_tasks`.
 ```bash
 cd /path/to/redmine/plugins
 # unpack the release zip (check that the folder is named redmine_sequential_tasks)
-unzip redmine_sequential_tasks-0.10.0.zip
+unzip redmine_sequential_tasks-0.11.0.zip
 ls -la redmine_sequential_tasks
 ```
 
-**With git clone**: the main branch of the public repository is updated only at releases. To install a given version, name its tag (`v0.10.0`, etc.). The images of the manual and the git history come along, about 50 MB (the zip is 310 KB).
+**With git clone**: the main branch of the public repository is updated only at releases. To install a given version, name its tag (`v0.11.0`, etc.). The images of the manual and the git history come along, about 50 MB (the zip is 310 KB).
 
 ```bash
 cd /path/to/redmine/plugins
-git clone --branch v0.10.0 https://github.com/yoohey/redmine_sequential_tasks.git
+git clone --branch v0.11.0 https://github.com/yoohey/redmine_sequential_tasks.git
 ls -la redmine_sequential_tasks
 ```
 
@@ -168,7 +168,7 @@ ls -la redmine_sequential_tasks
 
 ```bash
 mkdir -p plugins
-git clone --branch v0.10.0 https://github.com/yoohey/redmine_sequential_tasks.git plugins/redmine_sequential_tasks
+git clone --branch v0.11.0 https://github.com/yoohey/redmine_sequential_tasks.git plugins/redmine_sequential_tasks
 ```
 
 ```yaml
@@ -200,7 +200,7 @@ sudo systemctl restart redmine
 ```
 
 #### (4) Check the installation
-Log in to Redmine as an administrator. If **`Redmine Sequential Tasks Plugin`** is listed under **Administration ➔ Plugins**, the installation is done.
+Log in to Redmine as an administrator. If **`Redmine Sequential Tasks (Bamboo chart)`** is listed under **Administration ➔ Plugins**, the installation is done.
 
 > [!NOTE]
 > For updating to a later version, see **chapter 12 (section 12.3)**.
@@ -209,7 +209,7 @@ Log in to Redmine as an administrator. If **`Redmine Sequential Tasks Plugin`** 
 
 ### 2.3 Tracker settings in Administration
 
-Define the trackers the plugin works on, and the stage pipeline each of them goes through.
+Define the trackers the plugin works on, and the stage sequence each of them goes through.
 
 1. Open **Administration ➔ "Sequential Tasks Settings"** (or the settings link in the list of plugins).
 2. Choose the tracker to set up.
@@ -218,9 +218,9 @@ Define the trackers the plugin works on, and the stage pipeline each of them goe
    - `Bold`: the default. Filled with the stage's color, with white text. Progress and delays stand out the most.
    - `Subtle`: a pale fill with a frame in the stage's color and a line at the left edge. For teams that prefer a calm look.
    - `Light`: almost white, with a gray frame and a line in the stage's color at the left edge. To blend into the background.
-5. **Build the stage pipeline**:
+5. **Build the stage sequence**:
    - Open the list of statuses the tracker can use.
-   - Tick the statuses that make up the pipeline.
+   - Tick the statuses that make up the stages.
    - **Drag and drop** them into the order the stages are passed (the flow from left to right).
    - Enter the **standard days (0-365)** of each stage (only the first stage can be 0 days).
    - Choose the **bar color** of each stage from the 12 presets or with the color picker.
@@ -240,7 +240,7 @@ Define the trackers the plugin works on, and the stage pipeline each of them goe
 The plugin follows Redmine's own status transitions (the workflow).
 
 - **Check the transitions**:  
-  In **Administration ➔ Workflow**, make sure each role can move between the statuses of the pipeline you defined.
+  In **Administration ➔ Workflow**, make sure each role can move between the statuses of the stages you defined.
 - **Allow sending work back**:  
   If issues are sent back (rework), such as "Review ➔ Implementation" or "Effect check ➔ Root-cause analysis", the workflow must also allow the transition in that reverse direction.
 - **Permission to edit the start and due dates**:  
@@ -271,7 +271,7 @@ So that no work is planned on weekends or other days off, the plugin follows Red
 ### 2.6 Switching it on in a project, permissions and plugin settings
 
 #### (1) Enable the module in the project
-The tracker settings alone do not show anything. In each project that uses it, tick **"Sequential tasks"** under **Settings ➔ Modules** and save. Then the "Sequential Tasks" tab appears in the project menu, and the bar is shown on the issue page.
+The tracker settings alone do not show anything. In each project that uses it, tick **"Sequential tasks"** under **Settings ➔ Modules** and save. Then the "Bamboo chart" tab appears in the project menu, and the Bamboo chart is shown on the issue page.
 
 #### (2) Permissions
 | Permission | What it allows | Note |
@@ -282,7 +282,7 @@ The tracker settings alone do not show anything. In each project that uses it, t
 | Adjust the standard days (`manage_sequential_tasks`) | Standard days per project (9.1) | Not given to any role by default |
 
 #### (3) Plugin settings (Administration ➔ Plugins ➔ "Configure" of Sequential Tasks)
-- **Tab name**: the name of the tab in the project menu and of the headings of the timeline, the matrix and the analysis. When blank, "Sequential Tasks". You can use your workplace's own word, such as "Stages" (up to 30 characters; the same name in every language).
+- **Tab name**: the name of the tab in the project menu and of the headings of the timeline, the matrix and the analysis. When blank, "Bamboo chart". You can use your workplace's own word, such as "Stages" (up to 30 characters; the same name in every language).
 - **Order of assignee names**: follow Redmine / family name first / first name first.
 - **Trackers shown as milestones**: issues of the trackers chosen here (for events, etc.) are shown under the header of the timeline as points (◆) or as phase bands (chapter 6).
 
@@ -292,9 +292,9 @@ The tracker settings alone do not show anything. In each project that uses it, t
 
 ## Chapter 3: Managing stages on the issue page
 
-### 3.1 Creating an issue and the stage pipeline it gets
+### 3.1 Creating an issue and the plan of its stages
 
-When you create an issue with a tracker that has sequential tasks switched on, its stage pipeline is built automatically, with no extra setup.
+When you create an issue with a tracker that has sequential tasks switched on, the plan of its stages (its Bamboo chart) is laid out automatically, with no extra setup.
 
 1. **Create the issue as usual**:
    - Choose the project and a tracker with sequential tasks switched on (e.g. "Defect countermeasure", "Design change", "Incident").
@@ -478,7 +478,7 @@ For these, the **"Count non-working days"** checkbox of the stage can be switche
 If the tracker of an issue is changed while it is in use, the plugin rebuilds its stages to follow the stage definition of the new tracker.
 
 - **Normal tracker ➔ tracker with sequential tasks**:
-  When a normal issue is changed to a tracker with stages, its stage pipeline is built from the standard days of the new tracker, and the due date is recalculated.
+  When a normal issue is changed to a tracker with stages, the plan of its stages is laid out from the standard days of the new tracker, and the due date is recalculated.
 - **Between trackers with sequential tasks**:
   The stages (their number and standard days) are rebuilt and replaced with those of the new tracker.
 - **Tracker with sequential tasks ➔ normal tracker**:
@@ -569,7 +569,7 @@ Open the page of a parent that has branched tasks, and an accordion block **"Thi
 
 ### 5.1 Reading the screen and basic operations
 
-Click the **"Sequential Tasks"** tab in the project menu, and a timeline of all the sequential tasks in the project opens.
+Click the **"Bamboo chart"** tab in the project menu, and a timeline of all the sequential tasks in the project opens.
 
 ![The timeline. The toolbar, the milestone row and the phase bands at the top; the list of issues on the left; the stage bars and the lightning line on the right](images/manual/en/5-1-timeline.png)
 *Screen 5-1: The timeline. The toolbar, the milestone row and the phase bands at the top; the list of issues on the left; the stage bars and the lightning line on the right*
@@ -1040,7 +1040,7 @@ erDiagram
     PROJECTS ||--o{ ISSUES : "has"
     PROJECTS ||--o{ SEQUENTIAL_TASK_PROJECT_STEPS : "overrides days"
     TRACKERS ||--o{ ISSUES : "classifies"
-    TRACKERS ||--o| SEQUENTIAL_TASK_SETTINGS : "defines pipeline"
+    TRACKERS ||--o| SEQUENTIAL_TASK_SETTINGS : "defines stages"
     ISSUE_STATUSES ||--o{ SEQUENTIAL_TASK_STEPS : "step status"
     ISSUE_STATUSES ||--o{ ISSUE_STAGES : "stage status"
 
@@ -1168,9 +1168,9 @@ The timeline becomes a large matrix of hundreds of rows by dozens of days, so it
 
 ## Chapter 11: Integration with external systems (REST API)
 
-### 11.1 The pipeline built for issues created through the REST API
+### 11.1 The plan of the stages for issues created through the REST API
 
-Issues created through Redmine's own REST API (`POST /issues.json`) get their stage pipeline built exactly as when they are created on the web screen.
+Issues created through Redmine's own REST API (`POST /issues.json`) get the plan of their stages laid out exactly as when they are created on the web screen.
 
 - **Example request**:
   ```json
@@ -1234,7 +1234,7 @@ As a way of working with an external quality database, inspection equipment, mon
 
 ### 12.3 Updating to a new version
 
-The steps for updating the plugin to a new version (e.g. v0.9.0 ➔ v0.10.0). Run the migrations to bring the table definitions up to date.
+The steps for updating the plugin to a new version (e.g. v0.10.0 ➔ v0.11.0). Run the migrations to bring the table definitions up to date.
 
 ```bash
 cd /path/to/redmine
@@ -1246,9 +1246,9 @@ pg_dump -U <user> <dbname> > backup_before_update.sql
 #    (unpacking over it would leave files that the new version removed)
 cd plugins
 mv redmine_sequential_tasks /tmp/redmine_sequential_tasks.old
-unzip redmine_sequential_tasks-0.10.0.zip
+unzip redmine_sequential_tasks-0.11.0.zip
 #    If you installed with git clone, switch to the tag of the new version instead of the two lines above
-#    cd redmine_sequential_tasks && git fetch --tags && git checkout v0.10.0 && cd ..
+#    cd redmine_sequential_tasks && git fetch --tags && git checkout v0.11.0 && cd ..
 
 # 3. Run the plugin migrations (when the database changes)
 cd /path/to/redmine

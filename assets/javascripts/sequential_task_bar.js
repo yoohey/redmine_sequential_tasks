@@ -1,7 +1,7 @@
 /*
  * Sequential Tasks: the stage timeline on the issue page and its "adjust the schedule".
  * Moved out of the page (review 2026-11-14): no inline script or event attributes; the page gives its settings in
- * data attributes (#sq-stage-timeline: data-non-working; #stage-pipeline-bar: data-orig-due and the unit words) and
+ * data attributes (#sq-stage-timeline: data-non-working; #sq-bamboo-bar: data-orig-due and the unit words) and
  * the controls are found by id and class. The date calculation is SqDates (sequential_dates.js), shared with the
  * project timeline and the same rules as the server.
  */
@@ -14,9 +14,9 @@
   function $(id) { return document.getElementById(id); }
   function each(list, fn) { Array.prototype.forEach.call(list, fn); }
   function root() { return $('sq-stage-timeline'); }
-  function bar() { return $('stage-pipeline-bar'); }
-  function segs() { return document.querySelectorAll('#stage-pipeline-bar .stage-drag-seg'); }
-  function editing() { var b = bar(); return !!(b && b.classList.contains('stage-pipeline-editing')); }
+  function bar() { return $('sq-bamboo-bar'); }
+  function segs() { return document.querySelectorAll('#sq-bamboo-bar .stage-drag-seg'); }
+  function editing() { var b = bar(); return !!(b && b.classList.contains('sq-bamboo-bar-editing')); }
 
   function calc() {
     var r = root();
@@ -53,13 +53,13 @@
     var list = segs();
     var was = editing();
     function widths(on) {
-      b.classList.toggle('stage-pipeline-editing', on);
+      b.classList.toggle('sq-bamboo-bar-editing', on);
       each(list, function (seg) { seg.style.width = 'max-content'; });
       return Array.prototype.map.call(list, function (seg) { return Math.ceil(seg.getBoundingClientRect().width); }); // written all, then read all
     }
     var plain = widths(false);
     var edit = widths(true);
-    b.classList.toggle('stage-pipeline-editing', was);
+    b.classList.toggle('sq-bamboo-bar-editing', was);
     each(list, function (seg, i) { seg.setAttribute('data-base-px', Math.max(plain[i], edit[i])); });
   }
 
@@ -108,7 +108,7 @@
 
     // "Due date first": the slack's days are what is left up to the unchanged end of the plan
     fits = true;
-    var slackSeg = document.querySelector('#stage-pipeline-bar .stage-drag-seg[data-slack="1"]');
+    var slackSeg = document.querySelector('#sq-bamboo-bar .stage-drag-seg[data-slack="1"]');
     if (fixedDueMode() && slackSeg && start !== null) {
       var slack = stages[stages.length - 1];
       var r = c.slackDays(stages.slice(0, -1), slack, start, days, D.dayNumber(b.getAttribute('data-orig-due')));
@@ -159,7 +159,7 @@
     if (!controls) return;
     controls.style.display = open ? 'block' : 'none';
     var b = bar();
-    if (b) b.classList.toggle('stage-pipeline-editing', open);
+    if (b) b.classList.toggle('sq-bamboo-bar-editing', open);
     var sw = $('stage-mode-switch');
     if (sw) sw.style.display = open ? 'inline-flex' : 'none';
     each(document.querySelectorAll('.sq-adjust-toggle'), function (btn) { btn.setAttribute('aria-expanded', open ? 'true' : 'false'); });
@@ -239,7 +239,7 @@
   // it up (its end stays; less than 1 day does not fit); switching "count non-working days" keeps the stage's dates and
   // counts its days again, so nothing else moves. "Days first": the plan shifts / the stage keeps its count.
   function startChanged(input) {
-    var first = document.querySelector('#stage-pipeline-bar .stage-drag-seg[data-fixed="0"]');
+    var first = document.querySelector('#sq-bamboo-bar .stage-drag-seg[data-fixed="0"]');
     startTooLate = false;
     if (fixedDueMode() && first && input.value && lastPlan[first.getAttribute('data-stage-id')] && document.querySelector('#stage-mode-switch')) {
       var c = calc();

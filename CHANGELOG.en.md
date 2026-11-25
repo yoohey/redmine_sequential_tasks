@@ -4,6 +4,16 @@ The main changes of each version. The same content goes on the GitHub Releases.
 
 [日本語](CHANGELOG.md)
 
+## 0.11.0 (2026-11-25)
+
+The version of the "Bamboo chart" name. The plugin ID and the database do not change (no migrations).
+
+### Changed
+
+- "Bamboo chart" (one bar divided into the stages of an issue, showing the plan and the actual dates of each stage) is now the name we show. The plugin is listed as "Redmine Sequential Tasks (Bamboo chart)", and the default name of the tab in the project menu is "Bamboo chart" ("バンブーチャート" in Japanese). A tab name set in the plugin settings stays as it is. The plugin ID (`redmine_sequential_tasks`) is unchanged, so no reinstall or migration is needed.
+- "Pipeline" in the administration screen and the manual is now "the stages", "stage sequence" or "the plan of the stages". The titles and openings of the README and the manual now lead with "Bamboo chart", and their images were retaken.
+- The id and class of the bar on the issue page are now `#sq-bamboo-bar` and `.sq-bamboo-bar-editing` (were `#stage-pipeline-bar` and `.stage-pipeline-editing`). If your own CSS points at the old id, update it.
+
 ## 0.10.0 (2026-11-21)
 
 A version about opening and reading issues from the screens (the panel at the bottom, a small window with the schedule only, up and down in the order of the table). No database changes.

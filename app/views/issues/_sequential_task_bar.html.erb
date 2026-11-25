@@ -140,7 +140,7 @@
     </div>
   <% end %>
 
-  <!-- Stage Pipeline Bar with Boundary Milestone Dates: the one surface for both looking at the plan and (if
+  <!-- Bamboo chart bar with Boundary Milestone Dates: the one surface for both looking at the plan and (if
        editable) changing it -- dragging a boundary, or typing into the day count shown inside a stage,
        does the same thing; there is no separate list of stages elsewhere on the screen.
        Each stage box is as wide as its contents need without wrapping (its "base", measured once by the script
@@ -160,7 +160,7 @@
   <% open_group = adjustable_stages.size > 1 %>
   <%= form_tag(issue_sequential_task_stages_path(@issue.id), method: :put, id: 'sequential-task-stage-edit-form') do %>
     <%= hidden_field_tag :sq_float, '1', id: nil if params[:sq_float] == '1' %>
-    <div id="stage-pipeline-bar" data-orig-due="<%= stages.last&.planned_end_date&.strftime('%Y-%m-%d') %>" data-t-working="<%= l('sequential_tasks.issue_bar.working_days') %>" data-t-all-days="<%= l('sequential_tasks.issue_bar.all_days_unit') %>" class="sq-style-<%= RedmineSequentialTasks::BarStyle.normalize(setting.bar_style) %>">
+    <div id="sq-bamboo-bar" data-orig-due="<%= stages.last&.planned_end_date&.strftime('%Y-%m-%d') %>" data-t-working="<%= l('sequential_tasks.issue_bar.working_days') %>" data-t-all-days="<%= l('sequential_tasks.issue_bar.all_days_unit') %>" class="sq-style-<%= RedmineSequentialTasks::BarStyle.normalize(setting.bar_style) %>">
       <%# A stage of zero days gets no box, as on the project's timeline; it is never adjustable %>
       <% shown_stages = stages.reject { |s| s.respond_to?(:zero_day) && s.zero_day } %>
       <% shown_stages.each_with_index do |stage, idx|

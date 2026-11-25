@@ -1,21 +1,25 @@
-# redmine_sequential_tasks (Sequential Tasks)
+# Bamboo chart: a Redmine plugin to see the plan and the actual dates of each stage
 
-A Redmine plugin that keeps one issue as one issue and shows the **plan and the actual dates of each stage**, such as "Received → Root-cause analysis → Countermeasure → Effect check", as a bar.
+A Redmine plugin that keeps one issue as one issue and shows the **plan and the actual dates of each stage**, such as "Received → Root-cause analysis → Countermeasure → Effect check", as a **Bamboo chart**.
+
+**What is a Bamboo chart?** It is our own name for the chart this plugin draws: one bar per issue, divided at each stage, which looks like a stalk of bamboo with its nodes. As a bamboo grows straight up, the stages go one after another, and each node marks "this stage should be done by this day". It is lighter than a Gantt chart, and you do not have to split the issue.
+
+The plugin ID is `redmine_sequential_tasks` (Sequential Tasks).
 
 [日本語](README.md)
 
-> **Status**: v0.10.0 (2026-11-21). The author is still trying it out in daily use (dogfooding).
+> **Status**: v0.11.0 (2026-11-25). The author is still trying it out in daily use (dogfooding).
 
 ![Timeline](docs/images/timeline.en.png)
 
-*The timeline (made-up data). Each row has the planned and actual bars of its stages, and the lightning line joins today's line to where each issue is now.*
+*The timeline (made-up data). Each row is the Bamboo chart of an issue (the planned and actual bars of its stages), and the lightning line joins today's line to where each issue is now.*
 
 ## What it does
 
 A Redmine issue has only a "start date" and a "due date", so you cannot see by when the stages in between should be done, or which one is late right now. Splitting the work into child issues and chaining them is laborious, and teams do not keep it up. With this plugin you set the stages of each tracker (an order of statuses and the standard days of each) once; when an issue is created, the plan of its stages is laid out automatically, and when its status moves on, the actual dates are recorded.
 
-- **Bar on the issue page**: the plan and the actual dates of each stage. Late stages turn red. Fix the plan by dragging a boundary of the bar or by typing the days ("Due date first" / "Days first").
-- **Timeline**: the project's issues as stage bars, with a lightning line that shows at a glance what is late and what is ahead. Due dates of versions, event points and phase bands too.
+- **Bamboo chart on the issue page**: the plan and the actual dates of each stage. Late stages turn red. Fix the plan by dragging a boundary of the bar or by typing the days ("Due date first" / "Days first").
+- **Timeline**: the project's issues as Bamboo charts, with a lightning line that shows at a glance what is late and what is ahead. Due dates of versions, event points and phase bands too.
 - **Matrix**: a table of stages × issues with the plan, the actual dates and the difference. It can be exported as CSV.
 - **Analysis**: how long issues stay in each stage (mean, median, share over the plan), to see where work tends to get stuck.
 - And more: branched tasks (the children keep going after the parent is closed), whether a release will be met, days spent waiting to be picked up, standard days per project, Japanese and English screens.
@@ -52,7 +56,7 @@ unzip redmine_sequential_tasks-<version>.zip          # creates plugins/redmine_
 
 ```sh
 cd <Redmine>/plugins
-git clone --branch v0.10.0 https://github.com/yoohey/redmine_sequential_tasks.git    # keep the folder name redmine_sequential_tasks
+git clone --branch v0.11.0 https://github.com/yoohey/redmine_sequential_tasks.git    # keep the folder name redmine_sequential_tasks
 ```
 
 After either of them, run the following and restart Redmine.
@@ -66,7 +70,7 @@ bundle exec rake redmine:plugins:migrate RAILS_ENV=production
 
 ```sh
 mkdir -p plugins
-git clone --branch v0.10.0 https://github.com/yoohey/redmine_sequential_tasks.git plugins/redmine_sequential_tasks
+git clone --branch v0.11.0 https://github.com/yoohey/redmine_sequential_tasks.git plugins/redmine_sequential_tasks
 ```
 
 ```yaml

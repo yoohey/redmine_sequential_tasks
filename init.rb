@@ -1,8 +1,8 @@
 Redmine::Plugin.register :redmine_sequential_tasks do
-  name 'Redmine Sequential Tasks Plugin'
+  name 'Redmine Sequential Tasks (Bamboo chart)'
   author 'yoohey'
-  description 'Visualizes and manages multi-stage sequential tasks with stage timelines and progress tracking.'
-  version '0.10.0'
+  description 'Shows the plan and the actual dates of each stage of an issue as a bamboo chart: one bar divided into its stages, like the nodes of a bamboo.'
+  version '0.11.0'
   url 'https://github.com/yoohey/redmine_sequential_tasks'
   author_url 'https://github.com/yoohey'
 

@@ -65,12 +65,12 @@ class SequentialTaskBarAdjustFormTest < Redmine::ControllerTest
     stages = issue.issue_stages.order(:position).to_a
     get :show, params: { id: issue.id }
 
-    assert_select '#stage-pipeline-bar .stage-drag-seg', 3
+    assert_select '#sq-bamboo-bar .stage-drag-seg', 3
     # the last stage (the slack) is not grayed out; its handle (the due date edge) is hidden in fixed_due mode
-    assert_select "#stage-pipeline-bar .stage-drag-seg[data-stage-id='#{stages.last.id}'] input.stage-duration-input"
-    assert_select '#stage-pipeline-bar input.stage-duration-input[disabled]', 0
-    assert_select "#stage-pipeline-bar .stage-drag-seg[data-stage-id='#{stages.last.id}'] .stage-drag-handle-slack[style*='visibility: hidden']"
-    assert_select "#stage-pipeline-bar .stage-drag-seg[data-stage-id='#{stages.first.id}'] .stage-drag-handle"
+    assert_select "#sq-bamboo-bar .stage-drag-seg[data-stage-id='#{stages.last.id}'] input.stage-duration-input"
+    assert_select '#sq-bamboo-bar input.stage-duration-input[disabled]', 0
+    assert_select "#sq-bamboo-bar .stage-drag-seg[data-stage-id='#{stages.last.id}'] .stage-drag-handle-slack[style*='visibility: hidden']"
+    assert_select "#sq-bamboo-bar .stage-drag-seg[data-stage-id='#{stages.first.id}'] .stage-drag-handle"
     # only the "does not fit" warning is left; no "adjusted automatically" note
     assert_select '.stage-slack-note', 1
   end
@@ -81,9 +81,9 @@ class SequentialTaskBarAdjustFormTest < Redmine::ControllerTest
     first = issue.issue_stages.order(:position).first
     get :show, params: { id: issue.id }
 
-    assert_select '#stage-pipeline-bar #stage-start-pill .stage-start-date', text: RedmineSequentialTasks::DateFormat.short(first.planned_start_date)
+    assert_select '#sq-bamboo-bar #stage-start-pill .stage-start-date', text: RedmineSequentialTasks::DateFormat.short(first.planned_start_date)
     assert_select "#stage-plan-pill-#{first.id} .stage-plan-date"
-    assert_select '#stage-pipeline-bar #stage-due-pill .stage-due-date'
+    assert_select '#sq-bamboo-bar #stage-due-pill .stage-due-date'
   end
 
   def test_the_boxes_carry_the_days_and_the_look_of_the_project_timeline
@@ -96,12 +96,12 @@ class SequentialTaskBarAdjustFormTest < Redmine::ControllerTest
     get :show, params: { id: issue.id }
 
     # the state classes and the stage color of the project's timeline, and the tracker's bar style
-    assert_select "#sq-stage-timeline #stage-pipeline-bar.sq-style-#{RedmineSequentialTasks::BarStyle.normalize(@setting.reload.bar_style)}"
-    assert_select "#stage-pipeline-bar .stage-drag-seg[data-stage-id='#{stages.first.id}'].sq-bar-cur[style*='--c:']"
-    assert_select "#stage-pipeline-bar .stage-drag-seg[data-stage-id='#{stages.last.id}'].sq-bar-future"
+    assert_select "#sq-stage-timeline #sq-bamboo-bar.sq-style-#{RedmineSequentialTasks::BarStyle.normalize(@setting.reload.bar_style)}"
+    assert_select "#sq-bamboo-bar .stage-drag-seg[data-stage-id='#{stages.first.id}'].sq-bar-cur[style*='--c:']"
+    assert_select "#sq-bamboo-bar .stage-drag-seg[data-stage-id='#{stages.last.id}'].sq-bar-future"
     # the script sizes each box from its days
     [3, 6, 9].zip(stages).each do |days, stage|
-      assert_select "#stage-pipeline-bar .stage-drag-seg[data-stage-id='#{stage.id}'][data-orig-duration='#{days}']"
+      assert_select "#sq-bamboo-bar .stage-drag-seg[data-stage-id='#{stage.id}'][data-orig-duration='#{days}']"
     end
   end
 
@@ -112,8 +112,8 @@ class SequentialTaskBarAdjustFormTest < Redmine::ControllerTest
     assert wait.zero_day
     get :show, params: { id: issue.id }
 
-    assert_select '#stage-pipeline-bar .stage-drag-seg', 2
-    assert_select "#stage-pipeline-bar .stage-drag-seg[data-stage-id='#{wait.id}']", 0
+    assert_select '#sq-bamboo-bar .stage-drag-seg', 2
+    assert_select "#sq-bamboo-bar .stage-drag-seg[data-stage-id='#{wait.id}']", 0
   end
 
   def test_the_start_date_can_be_typed_while_no_stage_has_finished
@@ -150,7 +150,7 @@ class SequentialTaskBarAdjustFormTest < Redmine::ControllerTest
     stages[1].update!(count_non_working: true)
     get :show, params: { id: issue.id }
 
-    assert_select '#stage-pipeline-bar input.stage-all-days[type=checkbox]', 3
+    assert_select '#sq-bamboo-bar input.stage-all-days[type=checkbox]', 3
     assert_select "input[type=hidden][name='stages[#{stages[1].id}][count_non_working]'][value='0']"
     assert_select "input.stage-all-days[name='stages[#{stages[1].id}][count_non_working]'][checked]"
     assert_select ".stage-drag-seg[data-stage-id='#{stages[1].id}'][data-all-days='1']"

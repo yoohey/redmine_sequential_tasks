@@ -429,10 +429,10 @@ body.sq-panel-on.sq-panel-at-bottom { box-sizing: border-box; } /* <body> is as 
 #sq-stage-timeline .stage-drag-handle { touch-action: none; }
 #sq-stage-timeline .stage-drag-handle:hover .stage-drag-grip, #sq-stage-timeline .stage-drag-handle:active .stage-drag-grip { background: #fde68a; }
 /* the handles, the editable day boxes and the "count non-working days" boxes only show up while adjusting */
-#stage-pipeline-bar.stage-pipeline-editing .stage-drag-handle { display: flex !important; }
-#stage-pipeline-bar.stage-pipeline-editing .stage-duration-static { display: none !important; }
-#stage-pipeline-bar.stage-pipeline-editing .stage-duration-edit { display: inline-flex !important; }
-#stage-pipeline-bar.stage-pipeline-editing .stage-all-days-edit { display: block !important; }
+#sq-bamboo-bar.sq-bamboo-bar-editing .stage-drag-handle { display: flex !important; }
+#sq-bamboo-bar.sq-bamboo-bar-editing .stage-duration-static { display: none !important; }
+#sq-bamboo-bar.sq-bamboo-bar-editing .stage-duration-edit { display: inline-flex !important; }
+#sq-bamboo-bar.sq-bamboo-bar-editing .stage-all-days-edit { display: block !important; }
 /* the mode switch: the selected one in blue (from the radio itself, not from a script) */
 #stage-mode-switch label { padding: 2px 10px; font-size: 11px; cursor: pointer; color: #334155; }
 #stage-mode-switch label + label { border-left: 1px solid #cbd5e1; }
@@ -477,7 +477,7 @@ body.sq-panel-on.sq-panel-at-bottom { box-sizing: border-box; } /* <body> is as 
 #sq-stage-timeline .sqb-banner { margin-bottom: 30px; padding: 4px 10px; border-radius: 4px; font-size: 11px; }
 #sq-stage-timeline .sq-no-working-day { background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; }
 #sq-stage-timeline .sqb-banner-oos { background: #fff7ed; border: 1px solid #fdba74; color: #c2410c; }
-#sq-stage-timeline #stage-pipeline-bar { display: flex; width: max-content; border-radius: 4px; background: #f1f5f9; padding: 2px; position: relative; }
+#sq-stage-timeline #sq-bamboo-bar { display: flex; width: max-content; border-radius: 4px; background: #f1f5f9; padding: 2px; position: relative; }
 #sq-stage-timeline #stage-adjustable-group { display: flex; flex: 0 0 auto; min-width: max-content; }
 #sq-stage-timeline .stage-drag-seg { flex: 0 0 auto; width: max-content; min-width: max-content; border-radius: 4px; padding: 8px 10px; box-sizing: border-box; position: relative; }
 #sq-stage-timeline .stage-drag-handle { position: absolute; right: -12px; top: 0; bottom: 0; width: 24px; cursor: ew-resize; z-index: 6; display: none; align-items: center; justify-content: center; }

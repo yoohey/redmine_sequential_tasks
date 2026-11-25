@@ -1,21 +1,25 @@
-# redmine_sequential_tasks（シーケンシャルタスク）
+# バンブーチャート ── Redmine で工程ごとの予定と実績を見るプラグイン
 
-Redmine のチケット1枚のまま、「受付 → 原因解析 → 対策 → 効果確認」のような**工程ごとの予定と実績**を帯で見せる Redmine プラグインです。
+Redmine のチケット1枚のまま、「受付 → 原因解析 → 対策 → 効果確認」のような**工程ごとの予定と実績**を、**バンブーチャート**で見せる Redmine プラグインです。
+
+**バンブーチャートとは**: このプラグインが描く図に付けた、私たちの造語です。チケット1件を1本の帯にして工程ごとに区切ると、節のある竹のように見えることから名付けました。竹がまっすぐ伸びるように工程は順に進み、節ごとに「この工程はこの日までに」という区切りが入ります。ガントチャートほど重くなく、チケットを分けずに使えます。
+
+プラグインの ID は `redmine_sequential_tasks`（シーケンシャルタスク）です。
 
 [English](README.en.md)
 
-> **状況**: v0.10.0（2026-11-21）。作者が自分で使いながら確かめている段階（ドッグフーディング）です。
+> **状況**: v0.11.0（2026-11-25）。作者が自分で使いながら確かめている段階（ドッグフーディング）です。
 
 ![タイムライン](docs/images/timeline.png)
 
-*タイムライン（架空のデータ）。行ごとに工程の予定・実績の帯、今日の線から各チケットの現在地を結ぶ稲妻線。*
+*タイムライン（架空のデータ）。行ごとに工程の予定・実績のバンブーチャート、今日の線から各チケットの現在地を結ぶ稲妻線。*
 
 ## できること
 
 Redmine のチケットは「開始日」と「期日」しか持てないので、途中の工程がいつまでに終わるべきか、今どこで遅れているかが見えません。子チケットに分けてつなぐ運用は、手間がかかって続きません。このプラグインは、トラッカーごとに工程（ステータスの順と標準日数）を決めておき、チケットを起票すると工程の予定を自動で組みます。ステータスを進めると、実績を記録します。
 
-- **チケット詳細の帯**: 工程ごとの予定と実績。遅れは赤。帯の境目のドラッグや日数の入力で、予定を直せます（期日優先／日数優先）。
-- **タイムライン**: プロジェクトのチケットを工程の帯で並べ、稲妻線で遅れと先行を一目で。バージョンの期日やイベントの点、大日程の帯も。
+- **チケット詳細のバンブーチャート**: 工程ごとの予定と実績。遅れは赤。帯の境目のドラッグや日数の入力で、予定を直せます（期日優先／日数優先）。
+- **タイムライン**: プロジェクトのチケットをバンブーチャートで並べ、稲妻線で遅れと先行を一目で。バージョンの期日やイベントの点、大日程の帯も。
 - **マトリックス**: 工程 × チケットの表で、予定・実績・差を一覧。CSV にも書き出せます。
 - **分析**: 工程ごとの滞留日数（平均・中央値・予定オーバー率）。どこで詰まりやすいかを見ます。
 - そのほか: 派生タスク（親を閉じても子は走り続ける）、リリースに間に合う見込み、受付待ちの日数、プロジェクトごとの標準日数、日本語・英語の画面。
@@ -52,7 +56,7 @@ unzip redmine_sequential_tasks-<版>.zip          # plugins/redmine_sequential_t
 
 ```sh
 cd <Redmine>/plugins
-git clone --branch v0.10.0 https://github.com/yoohey/redmine_sequential_tasks.git    # フォルダ名は redmine_sequential_tasks のまま
+git clone --branch v0.11.0 https://github.com/yoohey/redmine_sequential_tasks.git    # フォルダ名は redmine_sequential_tasks のまま
 ```
 
 zip・git clone のどちらのあとも、次を流して Redmine を再起動します。
@@ -66,7 +70,7 @@ bundle exec rake redmine:plugins:migrate RAILS_ENV=production
 
 ```sh
 mkdir -p plugins
-git clone --branch v0.10.0 https://github.com/yoohey/redmine_sequential_tasks.git plugins/redmine_sequential_tasks
+git clone --branch v0.11.0 https://github.com/yoohey/redmine_sequential_tasks.git plugins/redmine_sequential_tasks
 ```
 
 ```yaml

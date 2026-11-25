@@ -7,7 +7,7 @@ en:
       short: "%b %-d"
       year_month: "%b %Y"
     menu:
-      project: "Sequential Tasks"
+      project: "Bamboo chart"
       admin_settings: "Sequential Tasks Settings"
 
     view:
@@ -307,7 +307,7 @@ en:
 
     settings:
       title_for: "Sequential Tasks settings: %{tracker}"
-      index_help_html: "Set the <strong>target trackers</strong> managed as a sequence of stages (pipeline) and the <strong>status order and standard lead time (days)</strong> of each stage.<br>* Only trackers set to \"Enabled\" here get the automatic schedule on issue creation and appear on the project screen."
+      index_help_html: "Set the <strong>target trackers</strong> managed as a sequence of stages and the <strong>status order and standard lead time (days)</strong> of each stage.<br>* Only trackers set to \"Enabled\" here get the automatic schedule on issue creation and appear on the project screen."
       col_tracker: "Tracker"
       col_managed: "Sequential management"
       col_flow: "Configured stage flow (standard days)"
@@ -343,7 +343,7 @@ en:
       plugin_intro: "The target trackers and the stages (status order and standard lead time in days) are set on the settings screen below."
       plugin_link: "Open the per-tracker settings of Sequential Tasks"
       tab_label: "Tab name"
-      tab_label_help: "Used for the tab in the project menu and the heading of the screens. When blank, \"Sequential Tasks\" (up to 30 characters)."
+      tab_label_help: "Used for the tab in the project menu and the heading of the screens. When blank, \"Bamboo chart\" (up to 30 characters)."
       name_order: "Order of assignee names"
       name_order_redmine: "Follow Redmine (Administration > Settings > Display > Users display format)"
       name_order_first_last: "First name, family name (e.g. Taro Tanaka)"
