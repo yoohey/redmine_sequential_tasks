@@ -1,8 +1,8 @@
 # Bamboo chart: a Redmine plugin to see the plan and the actual dates of each stage
 
-A Redmine plugin that keeps one issue as one issue and shows the **plan and the actual dates of each stage**, such as "Received → Root-cause analysis → Countermeasure → Effect check", as a **Bamboo chart**.
+A Redmine plugin that keeps one issue as one issue and shows the **plan and the actual dates of each stage**, such as "Received → Root-cause analysis → Countermeasure → Effect check", as a single bar. The bar is divided at each stage, and each division marks "this stage should be done by this day".
 
-**What is a Bamboo chart?** It is our own name for the chart this plugin draws: one bar per issue, divided at each stage, which looks like a stalk of bamboo with its nodes. As a bamboo grows straight up, the stages go one after another, and each node marks "this stage should be done by this day". It is lighter than a Gantt chart, and you do not have to split the issue.
+We could not find a common name for this kind of chart, so we named it a **Bamboo chart**: the bar with its divisions looks like a stalk of bamboo with its nodes. As a bamboo grows straight up, the stages go one after another. It is lighter than a Gantt chart, and you do not have to split the issue.
 
 The plugin ID is `redmine_sequential_tasks` (Sequential Tasks).
 
