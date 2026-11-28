@@ -195,7 +195,9 @@
              data-orig-duration="<%= box_days %>" data-start="<%= stage.planned_start_date&.strftime('%Y-%m-%d') %>" data-end="<%= stage.planned_end_date&.strftime('%Y-%m-%d') %>"
              style="--c: <%= base_color %>;">
           <% if editable_screen && is_adjustable_box %>
-            <div class="stage-drag-handle<%= ' stage-drag-handle-slack' if is_slack_box %>" data-stage-id="<%= stage.id %>" title="<%= l('sequential_tasks.stage_form.drag_hint') %>"
+            <%# no title: the browser's own tooltip would cover the date callouts above the bar; the grip, the
+                resize cursor and the hint under the controls already say what it does %>
+            <div class="stage-drag-handle<%= ' stage-drag-handle-slack' if is_slack_box %>" data-stage-id="<%= stage.id %>" role="separator" aria-orientation="vertical" aria-label="<%= l('sequential_tasks.stage_form.drag_hint') %>"
                  <%= raw ' style="visibility: hidden;"' if is_slack_box %>>
               <div class="stage-drag-grip"></div>
             </div>
@@ -217,8 +219,9 @@
                   <span class="stage-days-unit"><%= l(stage.all_days? ? 'sequential_tasks.issue_bar.all_days_unit' : 'sequential_tasks.issue_bar.working_days') %></span>
                 </span>
                 <%# this stage counts the non-working days too (e.g. recovered on a weekend); its own line, so the box
-                    does not get wider. The hidden 0 is sent when the box is not ticked %>
-                <label class="stage-all-days-edit" title="<%= l('sequential_tasks.stage_form.count_non_working_title') %>">
+                    does not get wider. The hidden 0 is sent when the box is not ticked. No title: the browser's tooltip
+                    covered the bar, and the words on the box say what it does %>
+                <label class="stage-all-days-edit">
                   <input type="hidden" name="stages[<%= stage.id %>][count_non_working]" value="0">
                   <input type="checkbox" name="stages[<%= stage.id %>][count_non_working]" value="1" class="stage-all-days"<%= ' checked' if stage.all_days? %> aria-label="<%= l('sequential_tasks.stage_form.count_non_working_label', stage: st_name) %>"><%= l('sequential_tasks.stage_form.count_non_working') %>
                 </label>
@@ -323,12 +326,14 @@
         <div class="sqb-controls-row">
           <% if editable_screen %>
             <%# A callout pointing up at the left end of the bar, which is the start %>
-            <label class="sq-start-bubble<%= ' sq-start-locked' unless start_changeable %>" title="<%= start_locked_reason %>">
+            <label class="sq-start-bubble<%= ' sq-start-locked' unless start_changeable %>">
               <%= l('sequential_tasks.stage_form.start_date') %>
               <input type="date" name="start_date" id="stage-start-input" value="<%= stages.first.planned_start_date&.strftime('%Y-%m-%d') %>"
                      <%= 'disabled' unless start_changeable %> aria-describedby="stage-start-why">
-              <%# the reason, short and on screen while it is grayed out (not only on hover: touch and keyboard) %>
-              <% unless start_changeable %><span id="stage-start-why" class="sq-start-why">🔒 <%= l(start_workflow_ok ? 'sequential_tasks.stage_form.start_locked_short' : 'sequential_tasks.stage_form.start_locked_workflow_short') %></span><% end %>
+              <%# the reason, short and on screen while it is grayed out (not only on hover: touch and keyboard).
+                  The long reason sits on this short text only, not on the label: a title on the label (around a
+                  disabled input) showed two browser tooltips at once %>
+              <% unless start_changeable %><span id="stage-start-why" class="sq-start-why" title="<%= start_locked_reason %>">🔒 <%= l(start_workflow_ok ? 'sequential_tasks.stage_form.start_locked_short' : 'sequential_tasks.stage_form.start_locked_workflow_short') %></span><% end %>
             </label>
           <% end %>
           <div class="sqb-total">

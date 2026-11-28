@@ -1,0 +1,60 @@
+<%
+  # The stage timeline in the form of a new issue: the plan of its stages, open for changing from the start. The same
+  # ids and classes as the issue page's bar, so its look applies as it is. Its values go with the
+  # issue's own form (sq_plan); a rebuilt form (a new tracker or project) sends them back, and they are kept as long as
+  # the tracker is the same.
+  calc = RedmineSequentialTasks::WorkingDayCalculator
+  override = RedmineSequentialTasks::Hooks.plan_override(plan_params, issue.tracker_id)
+  start = (calc.next_working_day(issue.start_date || User.current.today) rescue nil) # rubocop:disable Style/RescueModifier
+  entries = start ? RedmineSequentialTasks::CreationPlan.new(setting, issue.project_id, override).entries(start) : []
+  shown = entries.reject(&:zero_day)
+  default_palette = %w[#3b82f6 #f59e0b #10b981 #8b5cf6 #ec4899 #06b6d4]
+  date_short = ->(d) { d ? RedmineSequentialTasks::DateFormat.short(d) : '-' }
+%>
+<% if shown.any? %>
+<%= stylesheet_link_tag 'sequential_tasks', plugin: 'redmine_sequential_tasks' %>
+<div class="sequential-task-container sq-new-plan" id="sq-stage-timeline" <%= RedmineSequentialTasks::DateFormat.data_attributes.map { |k, v| %(#{k}="#{h(v)}") }.join(' ').html_safe %>
+     data-non-working="<%= calc.non_working_week_days.to_json %>" data-today="<%= User.current.today.strftime('%Y-%m-%d') %>" data-fill-due="<%= override ? '0' : '1' %>" data-t-working="<%= l('sequential_tasks.issue_bar.working_days') %>" data-t-all-days="<%= l('sequential_tasks.issue_bar.all_days_unit') %>">
+  <%= hidden_field_tag 'sq_plan[tracker_id]', issue.tracker_id, id: nil %>
+  <div class="sqb-head">
+    <div class="sqb-title"><span class="sqb-dot"></span> <%= l('sequential_tasks.new_plan.heading') %></div>
+    <div class="sqb-tools">
+      <span><%= l('sequential_tasks.issue_bar.due_date') %>: <strong id="preview-total-due-date"><%= RedmineSequentialTasks::DateFormat.full(shown.last.end_date) %></strong></span>
+    </div>
+  </div>
+  <div id="sq-bamboo-bar" class="sq-bamboo-bar-editing sq-style-<%= RedmineSequentialTasks::BarStyle.normalize(setting.bar_style) %>">
+    <% shown.each_with_index do |entry, idx|
+         step = entry.step
+         name = step.status&.name || l('sequential_tasks.issue_bar.unknown_stage')
+         color = step.color.to_s.match?(SequentialTaskStep::COLOR_FORMAT) ? step.color : default_palette[(step.position - 1) % default_palette.size]
+         field = "sq_plan[steps][#{step.status_id}]"
+    %>
+      <div class="stage-drag-seg sq-bar-future" data-step="<%= step.status_id %>" data-all-days="<%= entry.all_days ? '1' : '0' %>" style="--c: <%= color %>;">
+        <div class="stage-drag-handle" role="separator" aria-orientation="vertical" aria-label="<%= l('sequential_tasks.stage_form.drag_hint') %>"><div class="stage-drag-grip"></div></div>
+        <div class="sqb-stage-head"><span class="sqb-stage-name"><%= name %></span></div>
+        <div class="sq-stage-days">
+          <span class="stage-duration-edit">
+            <input type="number" name="<%= field %>[days]" class="stage-duration-input" value="<%= entry.days %>"
+                   min="1" max="<%= calc::MAX_STAGE_DAYS %>" inputmode="numeric" aria-label="<%= l('sequential_tasks.stage_form.days_label', stage: name) %>">
+            <span class="stage-days-unit"><%= l(entry.all_days ? 'sequential_tasks.issue_bar.all_days_unit' : 'sequential_tasks.issue_bar.working_days') %></span>
+          </span>
+          <label class="stage-all-days-edit">
+            <input type="hidden" name="<%= field %>[all]" value="0">
+            <input type="checkbox" name="<%= field %>[all]" value="1" class="stage-all-days"<%= ' checked' if entry.all_days %> aria-label="<%= l('sequential_tasks.stage_form.count_non_working_label', stage: name) %>"><%= l('sequential_tasks.stage_form.count_non_working') %>
+          </label>
+        </div>
+        <% if idx.zero? %>
+          <div id="stage-start-pill" class="sqb-pill"><div class="sqb-pill-box"><div class="sqb-pill-plan"><%= l('sequential_tasks.table.planned_label') %> <span class="stage-start-date"><%= date_short.call(entry.start_date) %></span></div></div><div class="sqb-tick"></div></div>
+        <% end %>
+        <% if idx < shown.size - 1 %>
+          <div class="sqb-pill sqb-pill-boundary"><div class="sqb-pill-box"><div class="sqb-pill-plan"><%= l('sequential_tasks.table.planned_label') %> <span class="stage-plan-date"><%= date_short.call(entry.end_date) %></span></div></div><div class="sqb-tick"></div></div>
+        <% end %>
+      </div>
+      <% if idx < shown.size - 1 %><div class="sqb-gap"></div><% end %>
+    <% end %>
+    <div id="stage-due-pill" class="sqb-pill"><div class="sqb-pill-box"><%= l('sequential_tasks.issue_bar.due_date') %>: <span class="stage-due-date"><%= date_short.call(shown.last.end_date) %></span></div><div class="sqb-tick"></div></div>
+  </div>
+  <p class="sqb-hint"><span id="stage-cannot-fit" class="sq-cannot-fit" hidden><%= l('sequential_tasks.flash.cannot_fit_new_due_date') %></span> <%= l('sequential_tasks.new_plan.hint') %></p>
+</div>
+<%= javascript_include_tag 'sequential_dates', 'sequential_task_new_plan', plugin: 'redmine_sequential_tasks' %>
+<% end %>

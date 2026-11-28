@@ -57,6 +57,25 @@ class SequentialTasksEmbedTest < Redmine::ControllerTest
     get :show, params: { id: 1 }
     assert_select 'style#sq-embed', 0
   end
+
+  # Without the header (a Redmine on plain http://: browsers send Sec-Fetch-* to secure contexts only), a form sent
+  # inside the panel redirects without the parameter. The page then finds out itself: a small script adds the
+  # same style when it is in a frame of a page of this Redmine.
+  def test_without_the_header_the_page_checks_for_a_frame_itself
+    get :show, params: { id: 1 }
+    script = css_select('head script').map(&:text).find { |t| t.include?("s.id = 'sq-embed'") }
+    assert script, 'the script that checks for a frame'
+    assert_includes script, 'window.parent.location.origin !== window.location.origin', 'only a frame of this Redmine'
+    assert_includes script, '#main-menu', 'the same style as the server would add'
+    assert_includes script, '#sticky-issue-header'
+  end
+
+  def test_with_the_header_the_server_adds_the_style_and_no_script_is_needed
+    @request.headers['Sec-Fetch-Dest'] = 'iframe'
+    get :show, params: { id: 1 }
+    assert_select 'style#sq-embed'
+    assert css_select('head script').none? { |t| t.text.include?("s.id = 'sq-embed'") }
+  end
 end
 
 class SequentialTasksPanelTest < Redmine::ControllerTest

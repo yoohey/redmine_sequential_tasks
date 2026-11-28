@@ -1190,6 +1190,13 @@
     if (on && root.classList.contains('sq-reorder')) setReorderMode(false); // one mode at a time
     root.classList.toggle('sq-adjust', on);
     root.classList.toggle('sq-adj-fixed', adjustFixedDue());
+    if (!on) { // the bars get their own titles back (taken off while adjusting)
+      hideLockedTip();
+      each(root.querySelectorAll('.sq-bar[data-sq-title]'), function (b) {
+        b.setAttribute('title', b.getAttribute('data-sq-title'));
+        b.removeAttribute('data-sq-title');
+      });
+    }
     var bar = root.querySelector('.sq-adjust-bar');
     if (bar) bar.hidden = !on;
     fitScrollers();
@@ -1236,6 +1243,7 @@
       document.body.appendChild(tip);
     }
     clearTimeout(tip.hideTimer);
+    lockedTip = false; // any other message takes the tip over
     tip.textContent = text;
     tip.classList.toggle('sq-adj-tip-bad', kind === 'bad');
     tip.classList.toggle('sq-adj-tip-warn', kind === 'warn');
@@ -1274,8 +1282,29 @@
     var tr = bar.closest('tr');
     var kind = busy(tr) ? null : adjustKind(event, bar, tr, rowStages(c, tr));
     bar.style.cursor = kind === 'end' || kind === 'start' ? 'ew-resize' : (kind === 'move' ? 'grab' : 'not-allowed');
-    // why the start cannot move here (the issue page says the same)
-    bar.title = tr.hasAttribute('data-start-ok') ? '' : t('start-locked');
+    // No browser tooltip while adjusting: it cannot be placed, and changing a title under the pointer showed two
+    // tooltips at once. The bar's own title (the stage and its dates) waits in data-sq-title until the mode ends.
+    if (bar.hasAttribute('title')) {
+      bar.setAttribute('data-sq-title', bar.getAttribute('title'));
+      bar.removeAttribute('title');
+    }
+    // why the start cannot move here (the issue page says the same), in our own tip next to the pointer
+    if (!kind && !tr.hasAttribute('data-start-ok')) showLockedTip(event.clientX, event.clientY);
+    else hideLockedTip();
+  });
+
+  var lockedTip = false; // the tip shows why the start is locked (not the dates of a drag or "saved")
+  function showLockedTip(x, y) {
+    showTip(t('start-locked'), x, y, 'warn');
+    lockedTip = true;
+  }
+  function hideLockedTip() {
+    if (!lockedTip) return;
+    lockedTip = false;
+    hideTip();
+  }
+  document.addEventListener('pointerover', function (event) {
+    if (lockedTip && !(event.target.closest && event.target.closest('#sq-root.sq-adjust .sq-bar[data-sid]'))) hideLockedTip();
   });
 
   document.addEventListener('pointerdown', function (event) {

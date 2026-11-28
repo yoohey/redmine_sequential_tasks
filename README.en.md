@@ -8,7 +8,7 @@ The plugin ID is `redmine_sequential_tasks` (Sequential Tasks).
 
 [日本語](README.md)
 
-> **Status**: v0.11.0 (2026-11-25). The author is still trying it out in daily use (dogfooding).
+> **Status**: v0.12.0 (2026-11-28). The author is still trying it out in daily use (dogfooding).
 
 ![Timeline](docs/images/timeline.en.png)
 
@@ -56,7 +56,7 @@ unzip redmine_sequential_tasks-<version>.zip          # creates plugins/redmine_
 
 ```sh
 cd <Redmine>/plugins
-git clone --branch v0.11.0 https://github.com/yoohey/redmine_sequential_tasks.git    # keep the folder name redmine_sequential_tasks
+git clone --branch v0.12.0 https://github.com/yoohey/redmine_sequential_tasks.git    # keep the folder name redmine_sequential_tasks
 ```
 
 After either of them, run the following and restart Redmine.
@@ -70,7 +70,7 @@ bundle exec rake redmine:plugins:migrate RAILS_ENV=production
 
 ```sh
 mkdir -p plugins
-git clone --branch v0.11.0 https://github.com/yoohey/redmine_sequential_tasks.git plugins/redmine_sequential_tasks
+git clone --branch v0.12.0 https://github.com/yoohey/redmine_sequential_tasks.git plugins/redmine_sequential_tasks
 ```
 
 ```yaml

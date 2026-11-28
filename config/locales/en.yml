@@ -145,6 +145,7 @@ en:
       due_not_changeable: "The due date of this issue cannot be changed by the workflow, so the periods cannot be adjusted."
       tracker_dates_not_changeable: "This tracker sets the start and due dates from the plan of its stages, but the workflow does not let you change the start date or the due date, so the tracker cannot be changed."
       cannot_fit_due_date: "It does not fit into this due date. Adjust the days, or switch to \"Days first\" (after editing the due date of the issue: check that date)."
+      cannot_fit_new_due_date: "The stages do not fit before this due date. Set a later due date, or change the days of the stages."
       version_unknown: "That version cannot be used in this project."
       version_not_changeable: "The target version of this issue cannot be changed (workflow permissions)."
       update_failed: "Failed to update the schedule: %{errors}"
@@ -264,7 +265,7 @@ en:
       stage_fallback: "Stage %{position}"
 
     issue_bar:
-      heading: "Stage timeline"
+      heading: "Timeline"
       origin: "Branched from:"
       due_date: "Due date"
       adjust: "Adjust schedule"
@@ -286,7 +287,6 @@ en:
     stage_form:
       total_due: "Due date after recalculation"
       count_non_working: "Count non-working days"
-      count_non_working_title: "This stage counts the non-working days (weekends) too, e.g. when it was recovered by working on them"
       days_label: "Days of %{stage}"
       count_non_working_label: "%{stage}: count non-working days"
       start_locked_short: "a stage has finished"
@@ -303,8 +303,11 @@ en:
       mode_push_hint: "Each stage keeps its days; the later stages and the due date move along."
       cannot_fit_hint: "Does not fit into this due date"
       drag_hint: "Drag to adjust the duration"
-      drag_bar_hint: "Drag a boundary on the stage timeline above, or type a stage's days, and the dates are recalculated. Nothing is saved until \"Save\" is pressed."
+      drag_bar_hint: "Drag a boundary on the timeline above, or type a stage's days, and the dates are recalculated. Nothing is saved until \"Save\" is pressed."
 
+    new_plan:
+      heading: "Timeline (plan)"
+      hint: "Drag a boundary between stages or change the days: the plan moves along, and the due date field becomes the end of the plan. Changing the due date field by hand stretches or shrinks the last stage. Saved together with the new issue."
     settings:
       title_for: "Sequential Tasks settings: %{tracker}"
       index_help_html: "Set the <strong>target trackers</strong> managed as a sequence of stages and the <strong>status order and standard lead time (days)</strong> of each stage.<br>* Only trackers set to \"Enabled\" here get the automatic schedule on issue creation and appear on the project screen."

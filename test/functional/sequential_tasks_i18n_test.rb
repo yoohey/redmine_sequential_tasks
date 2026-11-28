@@ -100,14 +100,14 @@ class SequentialTaskIssueBarI18nTest < Redmine::ControllerTest
       get :show, params: { id: issue.id }
       assert_response :success
       assert_english response.body
-      assert_includes response.body, 'Stage timeline'
+      assert_select '#sq-stage-timeline .sqb-title', /Timeline/
     end
   end
 
   def test_the_issue_screen_in_japanese
     use_language(2, 'ja')
     get :show, params: { id: @waiting.id }
-    assert_includes response.body, 'ステージタイムライン'
+    assert_select '#sq-stage-timeline .sqb-title', /タイムライン/
     assert_includes response.body, 'ステージにありません'
     get :show, params: { id: @child.id }
     assert_includes response.body, '派生元'

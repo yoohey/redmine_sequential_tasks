@@ -4,6 +4,23 @@ The main changes of each version. The same content goes on the GitHub Releases.
 
 [日本語](CHANGELOG.md)
 
+## 0.12.0 (2026-11-28)
+
+The version where the stages are planned while creating an issue. No database changes (no migrations).
+
+### Added
+
+- The new issue form (also when copying an issue) shows the timeline (the bar of the issue). While creating, change the days of each stage (and "count non-working days") the same way as "adjust the schedule" on the issue page, then save them with the issue. The bar and the start and due date fields are linked: changing the bar makes the due date field the end of the plan, and changing the due date field by hand stretches or shrinks the last stage. Without changes, the standard days as before. When a tracker shows the bar, it is one of the Bamboo chart's. Issues created through the REST API are unchanged.
+
+### Changed
+
+- The heading of the bar on the issue page is now "Timeline" (was "Stage timeline"): the Bamboo chart is the whole project in one list, and the bar of one issue is one line of it.
+
+### Fixed
+
+- On a Redmine served over plain `http://` (not HTTPS), saving an issue inside the side panel or the floating window brought Redmine's header and menus into it. Browsers do not send the header that tells a frame apart to connections that are not secure.
+- Browser tooltips no longer get in the way of adjusting the plan. On the issue page, hovering a boundary handle or "count non-working days" showed a tooltip that hid the date labels above the bar. In the adjust mode of the timeline, hovering the bar of an issue whose start cannot move showed the same tooltip twice; the reason now shows in the plugin's own tip next to the pointer.
+
 ## 0.11.0 (2026-11-25)
 
 The version of the "Bamboo chart" name. The plugin ID and the database do not change (no migrations).

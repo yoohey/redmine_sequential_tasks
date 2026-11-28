@@ -35,6 +35,10 @@ module RedmineSequentialTasks
         end
       end
 
+      # The days of the stages chosen on the new issue form ({ status_id => { days:, all: } }), set by
+      # Hooks#controller_issues_new_before_save; nil means the standard days
+      attr_accessor :sequential_plan_override
+
       # Safe helper to get the parent issue this issue was branched from.
       # Returns nil when the parent is not visible to the current user.
       def branched_from_issue
@@ -79,22 +83,24 @@ module RedmineSequentialTasks
         self.start_date ||= User.current.today
         self.start_date = RedmineSequentialTasks::WorkingDayCalculator.next_working_day(self.start_date)
 
-        self.due_date = sequential_plan_end(setting, start_date) if due_date.blank?
+        if sequential_plan_override
+          # chosen on the form: the plan ends on the due date given (the stage before it fits), or sets it
+          self.due_date = sequential_creation_plan(setting).end_date(start_date, due: due_date.presence)
+        elsif due_date.blank?
+          self.due_date = sequential_plan_end(setting, start_date)
+        end
+      rescue RedmineSequentialTasks::CreationPlan::CannotFit
+        errors.add(:due_date, l('sequential_tasks.flash.cannot_fit_new_due_date'))
+        throw(:abort)
+      end
+
+      def sequential_creation_plan(setting)
+        RedmineSequentialTasks::CreationPlan.new(setting, project_id, sequential_plan_override)
       end
 
       # The end of the plan laid out from the standard days, starting on `start` (a working day)
       def sequential_plan_end(setting, start)
-        standard = RedmineSequentialTasks::StandardDays.new(project_id) # the project's days, else the tracker's
-        cur_start = start
-        cur_end = cur_start
-        setting.steps.each_with_index do |step, index|
-          days = standard.days(tracker_id, step).to_i
-          next if index.zero? && days <= 0 # a wait for somebody to pick the issue up: it uses no days
-
-          cur_end = RedmineSequentialTasks::WorkingDayCalculator.calculate_end_date(cur_start, days)
-          cur_start = RedmineSequentialTasks::WorkingDayCalculator.next_stage_start_date(cur_end)
-        end
-        cur_end
+        RedmineSequentialTasks::CreationPlan.new(setting, project_id).end_date(start)
       end
 
       # an existing issue moved to a sequential tracker gets that tracker's stages, laid out from its start date
@@ -136,35 +142,26 @@ module RedmineSequentialTasks
         issue_stages.reset
       end
 
-      # Automatically generate planned stages for issues with enabled sequential task settings
+      # Automatically generate planned stages for issues with enabled sequential task settings: the standard days, or
+      # the days chosen on the new issue form (then the last stage ends on the due date, as set before the creation)
       def generate_sequential_task_stages
         setting = SequentialTaskSetting.find_by(tracker_id: tracker_id, enabled: true)
         return unless setting && setting.steps.any?
 
-        cur_start = RedmineSequentialTasks::WorkingDayCalculator.next_working_day(start_date || User.current.today)
-
-        standard = RedmineSequentialTasks::StandardDays.new(project_id)
+        start = start_date || User.current.today
+        plan = sequential_creation_plan(setting).entries(start, due: sequential_plan_override ? due_date : nil)
         ActiveRecord::Base.transaction do
-          setting.steps.each_with_index do |step, index|
-            days = standard.days(tracker_id, step).to_i
-            zero_day = index.zero? && days <= 0 # a wait for somebody to pick the issue up
-            duration = [days, 1].max
-            p_start = cur_start
-            if zero_day
-              p_end = p_start # a point: the next stage starts the same day
-            else
-              p_end = RedmineSequentialTasks::WorkingDayCalculator.calculate_end_date(p_start, duration)
-              cur_start = RedmineSequentialTasks::WorkingDayCalculator.next_stage_start_date(p_end)
-            end
-
+          plan.each do |entry|
+            step = entry.step
             is_initial = (step.status_id == status_id)
 
             stage = issue_stages.create!(
               status_id: step.status_id,
               position: step.position,
-              planned_start_date: p_start,
-              planned_end_date: p_end,
-              zero_day: zero_day,
+              planned_start_date: entry.start_date,
+              planned_end_date: entry.end_date,
+              zero_day: entry.zero_day,
+              count_non_working: entry.all_days,
               stage_status: is_initial ? 'in_progress' : 'pending',
               actual_start_at: is_initial ? Time.current : nil
             )

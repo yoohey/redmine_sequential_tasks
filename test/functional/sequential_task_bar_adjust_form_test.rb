@@ -71,6 +71,10 @@ class SequentialTaskBarAdjustFormTest < Redmine::ControllerTest
     assert_select '#sq-bamboo-bar input.stage-duration-input[disabled]', 0
     assert_select "#sq-bamboo-bar .stage-drag-seg[data-stage-id='#{stages.last.id}'] .stage-drag-handle-slack[style*='visibility: hidden']"
     assert_select "#sq-bamboo-bar .stage-drag-seg[data-stage-id='#{stages.first.id}'] .stage-drag-handle"
+    # no browser tooltip on the handle (it covered the date callouts); the name is for screen readers
+    assert_select '#sq-bamboo-bar .stage-drag-handle[title]', 0
+    assert_select '#sq-bamboo-bar .stage-drag-handle[aria-label]'
+    assert_select '#sq-bamboo-bar .stage-all-days-edit[title]', 0 # nor on "count non-working days" (it covered the bar)
     # only the "does not fit" warning is left; no "adjusted automatically" note
     assert_select '.stage-slack-note', 1
   end
@@ -132,7 +136,8 @@ class SequentialTaskBarAdjustFormTest < Redmine::ControllerTest
     issue.save!
     get :show, params: { id: issue.id }
 
-    assert_select 'label.sq-start-bubble.sq-start-locked[title] input#stage-start-input[disabled]'
+    assert_select 'label.sq-start-bubble.sq-start-locked:not([title]) input#stage-start-input[disabled]'
+    assert_select 'label.sq-start-locked #stage-start-why[title]' # the long reason, on the short text only
   end
 
   def test_no_mode_switch_with_only_one_adjustable_stage

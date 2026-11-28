@@ -93,4 +93,16 @@ class SequentialTasksApiIssueCreationTest < Redmine::ApiTest::Base
     assert_response :unprocessable_content
     assert ActiveSupport::JSON.decode(response.body)['errors'].any?
   end
+
+  # The days chosen on the new issue form are for the screen only: the REST API keeps the standard days for now
+  def test_days_sent_like_the_new_issue_form_are_not_used_through_the_api
+    steps(2, 3)
+    body = { issue: { project_id: 1, tracker_id: 1, subject: 'filed with a plan' },
+             sq_plan: { tracker_id: '1', steps: { '1' => { days: '9' }, '2' => { days: '9' } } } }
+    post '/issues.json', params: body.to_json, headers: { 'CONTENT_TYPE' => 'application/json' }.merge(credentials('jsmith'))
+    assert_response :created
+    issue = Issue.find(ActiveSupport::JSON.decode(response.body)['issue']['id'])
+    days = issue.issue_stages.order(:position).map { |s| calc.working_days_between(s.planned_start_date, s.planned_end_date) }
+    assert_equal [2, 3], days
+  end
 end

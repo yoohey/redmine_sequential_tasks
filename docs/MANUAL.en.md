@@ -5,7 +5,7 @@
 This is the operation and user manual of the Redmine plugin **Bamboo chart** (its ID is `redmine_sequential_tasks`; Sequential Tasks). A Bamboo chart is one bar divided into the stages of an issue, like the nodes of a bamboo, showing the plan and the actual dates of each stage.  
 It is written for everyone from the people who create issues and manage their progress every day (software developers, and also people in design, quality assurance, production engineering and so on), to the project managers (PMs / Scrum Masters) who oversee several cases, and the system administrators who set up and run the environment.
 
-The screenshots were taken with made-up data (development and quality of a small liquid-transfer pump, PX-200; the product, the people and the defects are all made up). The data are in English, and "today" in them is one day later than in the Japanese manual, so some numbers (days late, days waiting) differ from it by one day. The release zip does not include the images and videos. To read it with the images, open [docs/MANUAL.en.md](https://github.com/yoohey/redmine_sequential_tasks/blob/main/docs/MANUAL.en.md) on GitHub.
+The screenshots were taken with made-up data (development and quality of a small liquid-transfer pump, PX-200; the product, the people and the defects are all made up). The data are in English, made for the same day as the Japanese manual's. The data are made with the day the pictures were taken as "today", so the dates and the days late in the pictures change from version to version. The release zip does not include the images and videos. To read it with the images, open [docs/MANUAL.en.md](https://github.com/yoohey/redmine_sequential_tasks/blob/main/docs/MANUAL.en.md) on GitHub.
 
 ---
 
@@ -152,15 +152,15 @@ Put it in Redmine's `plugins/` folder under the name `redmine_sequential_tasks`.
 ```bash
 cd /path/to/redmine/plugins
 # unpack the release zip (check that the folder is named redmine_sequential_tasks)
-unzip redmine_sequential_tasks-0.11.0.zip
+unzip redmine_sequential_tasks-0.12.0.zip
 ls -la redmine_sequential_tasks
 ```
 
-**With git clone**: the main branch of the public repository is updated only at releases. To install a given version, name its tag (`v0.11.0`, etc.). The images of the manual and the git history come along, about 50 MB (the zip is 310 KB).
+**With git clone**: the main branch of the public repository is updated only at releases. To install a given version, name its tag (`v0.12.0`, etc.). The images of the manual and the git history come along, about 50 MB (the zip is 310 KB).
 
 ```bash
 cd /path/to/redmine/plugins
-git clone --branch v0.11.0 https://github.com/yoohey/redmine_sequential_tasks.git
+git clone --branch v0.12.0 https://github.com/yoohey/redmine_sequential_tasks.git
 ls -la redmine_sequential_tasks
 ```
 
@@ -168,7 +168,7 @@ ls -la redmine_sequential_tasks
 
 ```bash
 mkdir -p plugins
-git clone --branch v0.11.0 https://github.com/yoohey/redmine_sequential_tasks.git plugins/redmine_sequential_tasks
+git clone --branch v0.12.0 https://github.com/yoohey/redmine_sequential_tasks.git plugins/redmine_sequential_tasks
 ```
 
 ```yaml
@@ -308,9 +308,11 @@ When you create an issue with a tracker that has sequential tasks switched on, t
    - When the issue's status moves on (e.g. "New" ➔ "Investigating"), the end date and time are stamped on the previous stage and the start date and time on the new one.
    - Nobody has to type a done ratio (%): just changing the status as the daily work goes on builds up an accurate record of the actual dates.
 
+**You can plan the stages on the new issue form too**: when a tracker of Sequential Tasks is chosen, "Timeline (plan)" shows under the attributes of the new issue form (when it does not show, the tracker is not one of them). Change the days of the stages the same way as "Adjust schedule" on the issue page (drag a boundary, type the days, "Count non-working days") before creating the issue. The bar and the start and due date fields are linked: changing the start date lays the plan out again, changing the bar makes the due date field the end of the plan, and changing the due date field by hand stretches or shrinks the last stage to end on it (the issue is not created when the stages do not fit). Without changes, the standard days.
+
 > [!TIP]
-> **When the due date is decided before the issue is created**:  
-> If both the start and the due date are entered by hand when creating the issue, the due date stays as entered and each stage gets its standard days (the days are not spread out to fit). So the end of the last stage and the due date may differ. To make them match, fix the days with "Adjust schedule" after creating the issue, or create the issue with the due date left empty.
+> **Issues created through the REST API**:  
+> The REST API has no way to pass the days yet. Each stage gets its standard days, and a due date given stays as given (the end of the last stage and the due date may differ; fix it with "Adjust schedule" afterwards).
 
 ---
 
@@ -379,15 +381,15 @@ The plan is recalculated as follows, depending on the mode chosen.
 - **Limits and errors (does not fit)**:
   If it still does not fit by the due date, **"Does not fit into this due date"** is shown in red and the save button is disabled. This guard keeps an invalid plan that breaks through the due date from being made.
 
-![Due date first ("Adjust schedule" on the issue page). Lengthening the impact assessment from 2 to 4 days shrinks the next stage, the drawing revision, from 3 days to 1, and the due date (11/20) does not move (not saved in this video)](images/manual/en/v3-1a-due-first.png)
-*Video 3-1a (animation): Due date first. Lengthening the impact assessment from 2 to 4 days shrinks the drawing revision from 3 days to 1, and the due date (11/20) does not move (not saved in this video)*
+![Due date first ("Adjust schedule" on the issue page). Lengthening the impact assessment from 2 to 4 days shrinks the next stage, the drawing revision, from 3 days to 1, and the due date does not move (not saved in this video)](images/manual/en/v3-1a-due-first.png)
+*Video 3-1a (animation): Due date first. Lengthening the impact assessment from 2 to 4 days shrinks the drawing revision from 3 days to 1, and the due date does not move (not saved in this video)*
 
 ##### What "Days first" does
 - **Behavior**: if a stage (e.g. Investigation) goes from `2 days ➔ 5 days` (+3 days), the later stages keep their days and **all of them slide later by 3 working days**.
 - **The due date follows**: **the issue's overall due date (`due_date`) is recalculated and extended** by as much as the last stage moved.
 
-![Days first ("Adjust schedule" on the issue page). Lengthening the impact assessment from 2 to 4 days in the same way, the drawing revision keeps its 3 days and shifts later, and the due date moves from 11/20 to 11/24 (not saved in this video)](images/manual/en/v3-1b-days-first.png)
-*Video 3-1b (animation): Days first. Lengthening the impact assessment from 2 to 4 days in the same way, the drawing revision keeps its 3 days and shifts later, and the due date moves from 11/20 to 11/24 (not saved in this video)*
+![Days first ("Adjust schedule" on the issue page). Lengthening the impact assessment from 2 to 4 days in the same way, the drawing revision keeps its 3 days and shifts later, and the due date moves 2 working days later (not saved in this video)](images/manual/en/v3-1b-days-first.png)
+*Video 3-1b (animation): Days first. Lengthening the impact assessment from 2 to 4 days in the same way, the drawing revision keeps its 3 days and shifts later, and the due date moves 2 working days later (not saved in this video)*
 
 ---
 
@@ -452,8 +454,8 @@ For such uses, a tracker whose first stage has `0` standard days shows a special
 - **After work starts (when the status moves on)**:
   Moving the status on from "Received" to the next stage ("Investigating", etc.) **does not move the plan automatically**. The plan stays as laid out from the day of filing; a late pick-up shows up as a delay (red) and a dent in the lightning line. To lay out the plan again, a person fixes it with "Adjust schedule". The waiting period stays as a record of the past, as a pale hatched strip.
 
-![An issue whose first stage is 0 days (timeline). The "Waiting 4 d" chip and the thin hatched strip of the waiting period](images/manual/en/3-3-waiting.png)
-*Screen 3-3: An issue whose first stage is 0 days (timeline). The "Waiting 4 d" chip and the thin hatched strip of the waiting period*
+![An issue whose first stage is 0 days (timeline). The "Waiting N d" chip and the thin hatched strip of the waiting period](images/manual/en/3-3-waiting.png)
+*Screen 3-3: An issue whose first stage is 0 days (timeline). The "Waiting N d" chip and the thin hatched strip of the waiting period*
 
 ---
 
@@ -802,7 +804,7 @@ For when you "want to read the details of an issue while looking at the timeline
 - **Follows without a reload**:
   Press "Submit" in the side panel, and the timeline behind it is told about the update and redraws the stage bars of that issue and the lightning line right away. There is no need to reload the whole page.
 - **A small window with the schedule only (on trial)**:
-  **Double-click** a bar of stages, and a small window floats over the table with the subject, status, priority, assignee, version, start date, due date, done ratio and estimated time of the issue, and its stage timeline (with adjusting the plan and creating a branch), then the description, the attachments, the subtasks and the related issues (the yellow box of the issue page, without the small timeline of "This issue and its branches"). **"↑ Up"** and **"↓ Down"** in its head change it to the issue one row up or down in the table. Drag its head to move it; the browser remembers where it stood. Drag its lower right corner to change its size, which is remembered too (a double click on the corner goes back to the size that fits the issue). Until you change the size, it opens tall enough for two or three lines of the description, and a long description scrolls in its own box. There is one window: while it is open, a single click on a subject or a bar shows that issue in it (the panel does not open). The window and the panel are one at a time; **"◨ Open in the panel"** in the window moves the issue to the panel. When the plan is saved in the window, the window stays and the table is read again. A single click on a bar waits a moment (0.25 s) before the panel opens, to tell it from a double click.
+  **Double-click** a bar of stages, and a small window floats over the table with the subject, status, priority, assignee, version, start date, due date, done ratio and estimated time of the issue, and its timeline (with adjusting the plan and creating a branch), then the description, the attachments, the subtasks and the related issues (the yellow box of the issue page, without the small timeline of "This issue and its branches"). **"↑ Up"** and **"↓ Down"** in its head change it to the issue one row up or down in the table. Drag its head to move it; the browser remembers where it stood. Drag its lower right corner to change its size, which is remembered too (a double click on the corner goes back to the size that fits the issue). Until you change the size, it opens tall enough for two or three lines of the description, and a long description scrolls in its own box. There is one window: while it is open, a single click on a subject or a bar shows that issue in it (the panel does not open). The window and the panel are one at a time; **"◨ Open in the panel"** in the window moves the issue to the panel. When the plan is saved in the window, the window stays and the table is read again. A single click on a bar waits a moment (0.25 s) before the panel opens, to tell it from a double click.
 - **The issue above and below**:
   **"↑ Up"** and **"↓ Down"** in the head of the panel move to the issue one row up or down in the table. The order is the order of the rows on the screen (its sorting, filters, groups and folded branches; rows that are not shown are skipped), and when the row is out of view, the table scrolls by one row (up or down alike). Redmine's own "« Previous | Next »" on the issue page follow the issue numbers, so the panel does not show them.
 - **The row of the open issue**:
@@ -890,8 +892,8 @@ At sprint planning or the regular meeting, tasks that are about to overflow can 
 3. Drag the row of an issue expected to miss the release and **drop it into the group of the next version**.
 4. The "Target version" of the issue is changed right away and recorded in Redmine's history.
 
-![Grouped by version, in the reorder mode, the issue "Prototype 2: cold start test", expected to miss the release (⏱ 5d late), is dragged into the group of the next version, "Pilot production shipment". The counts and the ⏱ number in the headers change, and the row moves to the next version](images/manual/en/v6-4-version-move.png)
-*Video 6-4 (animation): Grouped by version, in the reorder mode, the issue "Prototype 2: cold start test", expected to miss the release (⏱ 5d late), is dragged into the group of the next version, "Pilot production shipment". The counts and the ⏱ number in the headers change, and the row moves to the next version*
+![Grouped by version, in the reorder mode, the issue "Prototype 2: cold start test", expected to miss the release (⏱ N d late), is dragged into the group of the next version, "Pilot production shipment". The counts and the ⏱ number in the headers change, and the row moves to the next version](images/manual/en/v6-4-version-move.png)
+*Video 6-4 (animation): Grouped by version, in the reorder mode, the issue "Prototype 2: cold start test", expected to miss the release (⏱ N d late), is dragged into the group of the next version, "Pilot production shipment". The counts and the ⏱ number in the headers change, and the row moves to the next version*
 
 ---
 
@@ -1234,7 +1236,7 @@ As a way of working with an external quality database, inspection equipment, mon
 
 ### 12.3 Updating to a new version
 
-The steps for updating the plugin to a new version (e.g. v0.10.0 ➔ v0.11.0). Run the migrations to bring the table definitions up to date.
+The steps for updating the plugin to a new version (e.g. v0.11.0 ➔ v0.12.0). Run the migrations to bring the table definitions up to date.
 
 ```bash
 cd /path/to/redmine
@@ -1246,9 +1248,9 @@ pg_dump -U <user> <dbname> > backup_before_update.sql
 #    (unpacking over it would leave files that the new version removed)
 cd plugins
 mv redmine_sequential_tasks /tmp/redmine_sequential_tasks.old
-unzip redmine_sequential_tasks-0.11.0.zip
+unzip redmine_sequential_tasks-0.12.0.zip
 #    If you installed with git clone, switch to the tag of the new version instead of the two lines above
-#    cd redmine_sequential_tasks && git fetch --tags && git checkout v0.11.0 && cd ..
+#    cd redmine_sequential_tasks && git fetch --tags && git checkout v0.12.0 && cd ..
 
 # 3. Run the plugin migrations (when the database changes)
 cd /path/to/redmine
